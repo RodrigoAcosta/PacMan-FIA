@@ -1,361 +1,65 @@
-{\rtf1\ansi\ansicpg1252\cocoartf1404\cocoasubrtf110
-{\fonttbl\f0\fmodern\fcharset0 Courier-Bold;\f1\fmodern\fcharset0 Courier;\f2\fmodern\fcharset0 Courier-Oblique;
-}
-{\colortbl;\red255\green255\blue255;\red0\green0\blue255;\red251\green0\blue7;\red15\green112\blue1;
-}
-\paperw11900\paperh16840\margl1440\margr1440\vieww10800\viewh8400\viewkind0
-\deftab720
-\pard\pardeftab720\partightenfactor0
+# textDisplay.py
+# --------------
+# Licensing Information: Please do not distribute or publish solutions to this
+# project. You are free to use and extend these projects for educational
+# purposes. The Pacman AI projects were developed at UC Berkeley, primarily by
+# John DeNero (denero@cs.berkeley.edu) and Dan Klein (klein@cs.berkeley.edu).
+# For more info, see http://inst.eecs.berkeley.edu/~cs188/sp09/pacman.html
 
-\f0\b\fs26 \cf2 \expnd0\expndtw0\kerning0
-import 
-\f1\b0 \cf0 pacman
-\f0\b , 
-\f1\b0 time\
-\
-DRAW_EVERY 
-\f0\b = 
-\f1\b0 \cf3 1\
-\cf0 SLEEP_TIME 
-\f0\b = 
-\f1\b0 \cf3 0 
-\f2\i \cf4 # This can be overwritten by __init__\
+import pacman, time
 
-\f1\i0 \cf0 DISPLAY_MOVES 
-\f0\b = \cf2 False\
+DRAW_EVERY = 1
+SLEEP_TIME = 0 # This can be overwritten by __init__
+DISPLAY_MOVES = False
+QUIET = False # Supresses output
 
-\f1\b0 \cf0 QUIET 
-\f0\b = \cf2 False 
-\f2\i\b0 \cf4 # Supresses output\
-\
+class NullGraphics:
+  def initialize(self, state, isBlue = False):
+    pass
+  
+  def update(self, state):
+    pass
+  
+  def pause(self):
+    time.sleep(SLEEP_TIME)
+    
+  def draw(self, state):
+    print state
+  
+  def finish(self):
+    pass
 
-\f0\i0\b \cf2 class 
-\f1\b0 \cf0 NullGraphics
-\f0\b :\
-  \cf2 def 
-\f1\b0 \cf0 initialize
-\f0\b (
-\f1\b0 \cf2 self
-\f0\b \cf0 , 
-\f1\b0 state
-\f0\b , 
-\f1\b0 isBlue 
-\f0\b = \cf2 False\cf0 ):\
-    \cf2 pass\
-  \
-  def 
-\f1\b0 \cf0 update
-\f0\b (
-\f1\b0 \cf2 self
-\f0\b \cf0 , 
-\f1\b0 state
-\f0\b ):\
-    \cf2 pass\
-  \
-  def 
-\f1\b0 \cf0 pause
-\f0\b (
-\f1\b0 \cf2 self
-\f0\b \cf0 ):\
-    
-\f1\b0 time
-\f0\b .
-\f1\b0 sleep
-\f0\b (
-\f1\b0 SLEEP_TIME
-\f0\b )\
-    \
-  \cf2 def 
-\f1\b0 \cf0 draw
-\f0\b (
-\f1\b0 \cf2 self
-\f0\b \cf0 , 
-\f1\b0 state
-\f0\b ):\
-    \cf2 print 
-\f1\b0 \cf0 state\
-  \
+class PacmanGraphics:
+  def __init__(self, speed=None):
+    if speed != None:
+      global SLEEP_TIME
+      SLEEP_TIME = speed
   
-\f0\b \cf2 def 
-\f1\b0 \cf0 finish
-\f0\b (
-\f1\b0 \cf2 self
-\f0\b \cf0 ):\
-    \cf2 pass\
-\
-class 
-\f1\b0 \cf0 NoGraphics
-\f0\b :\
-  \cf2 def 
-\f1\b0 \cf0 initialize
-\f0\b (
-\f1\b0 \cf2 self
-\f0\b \cf0 , 
-\f1\b0 state
-\f0\b , 
-\f1\b0 isBlue 
-\f0\b = \cf2 False\cf0 ):\
-    \cf2 pass\
-  \
-  def 
-\f1\b0 \cf0 update
-\f0\b (
-\f1\b0 \cf2 self
-\f0\b \cf0 , 
-\f1\b0 state
-\f0\b ):\
-    \cf2 pass\
-  \
-  def 
-\f1\b0 \cf0 pause
-\f0\b (
-\f1\b0 \cf2 self
-\f0\b \cf0 ):\
+  def initialize(self, state, isBlue = False):
+    self.draw(state)
+    self.pause()
+    self.turn = 0
+    self.agentCounter = 0
     
-\f1\b0 time
-\f0\b .
-\f1\b0 sleep
-\f0\b (
-\f1\b0 SLEEP_TIME
-\f0\b )\
-    \
-  \cf2 def 
-\f1\b0 \cf0 draw
-\f0\b (
-\f1\b0 \cf2 self
-\f0\b \cf0 , 
-\f1\b0 state
-\f0\b ):\
+  def update(self, state):
+    numAgents = len(state.agentStates)
+    self.agentCounter = (self.agentCounter + 1) % numAgents
+    if self.agentCounter == 0:
+      self.turn += 1
+      if DISPLAY_MOVES:
+        ghosts = [pacman.nearestPoint(state.getGhostPosition(i)) for i in range(1, numAgents)]
+        print "%4d) P: %-8s" % (self.turn, str(pacman.nearestPoint(state.getPacmanPosition()))),'| Score: %-5d' % state.score,'| Ghosts:', ghosts
+      if self.turn % DRAW_EVERY == 0:
+        self.draw(state)
+        self.pause()
+    if state._win or state._lose:
+      self.draw(state)
     
-\f1\b0 die\
+  def pause(self):
+    time.sleep(SLEEP_TIME)
     
-\f0\b \cf2 pass\
-  \
-  def 
-\f1\b0 \cf0 finish
-\f0\b (
-\f1\b0 \cf2 self
-\f0\b \cf0 ):\
-    \cf2 pass\
-\
-\
-class 
-\f1\b0 \cf0 PacmanGraphics
-\f0\b :\
-  \cf2 def 
-\f1\b0 \cf0 __init__
-\f0\b (
-\f1\b0 \cf2 self
-\f0\b \cf0 , 
-\f1\b0 speed
-\f0\b =
-\f1\b0 \cf2 None
-\f0\b \cf0 ):\
-    \cf2 if 
-\f1\b0 \cf0 speed 
-\f0\b != 
-\f1\b0 \cf2 None
-\f0\b \cf0 :\
-      \cf2 global 
-\f1\b0 \cf0 SLEEP_TIME\
-      SLEEP_TIME 
-\f0\b = 
-\f1\b0 speed\
-  \
+  def draw(self, state):
+    print state
   
-\f0\b \cf2 def 
-\f1\b0 \cf0 initialize
-\f0\b (
-\f1\b0 \cf2 self
-\f0\b \cf0 , 
-\f1\b0 state
-\f0\b , 
-\f1\b0 isBlue 
-\f0\b = \cf2 False\cf0 ):\
-    
-\f1\b0 \cf2 self
-\f0\b \cf0 .
-\f1\b0 draw
-\f0\b (
-\f1\b0 state
-\f0\b )\
-    
-\f1\b0 \cf2 self
-\f0\b \cf0 .
-\f1\b0 pause
-\f0\b ()\
-    
-\f1\b0 \cf2 self
-\f0\b \cf0 .
-\f1\b0 turn 
-\f0\b = 
-\f1\b0 \cf3 0\
-    \cf2 self
-\f0\b \cf0 .
-\f1\b0 agentCounter 
-\f0\b = 
-\f1\b0 \cf3 0\
-    \
-  
-\f0\b \cf2 def 
-\f1\b0 \cf0 update
-\f0\b (
-\f1\b0 \cf2 self
-\f0\b \cf0 , 
-\f1\b0 state
-\f0\b ):\
-    
-\f1\b0 numAgents 
-\f0\b = 
-\f1\b0 len
-\f0\b (
-\f1\b0 state
-\f0\b .
-\f1\b0 agentStates
-\f0\b )\
-    
-\f1\b0 \cf2 self
-\f0\b \cf0 .
-\f1\b0 agentCounter 
-\f0\b = (
-\f1\b0 \cf2 self
-\f0\b \cf0 .
-\f1\b0 agentCounter 
-\f0\b + 
-\f1\b0 \cf3 1
-\f0\b \cf0 ) % 
-\f1\b0 numAgents\
-    
-\f0\b \cf2 if 
-\f1\b0 self
-\f0\b \cf0 .
-\f1\b0 agentCounter 
-\f0\b == 
-\f1\b0 \cf3 0
-\f0\b \cf0 :\
-      
-\f1\b0 \cf2 self
-\f0\b \cf0 .
-\f1\b0 turn 
-\f0\b += 
-\f1\b0 \cf3 1\
-      
-\f0\b \cf2 if 
-\f1\b0 \cf0 DISPLAY_MOVES
-\f0\b :\
-        
-\f1\b0 ghosts 
-\f0\b = [
-\f1\b0 pacman
-\f0\b .
-\f1\b0 nearestPoint
-\f0\b (
-\f1\b0 state
-\f0\b .
-\f1\b0 getGhostPosition
-\f0\b (
-\f1\b0 i
-\f0\b )) \cf2 for 
-\f1\b0 \cf0 i 
-\f0\b \cf2 in 
-\f1\b0 \cf0 range
-\f0\b (
-\f1\b0 \cf3 1
-\f0\b \cf0 , 
-\f1\b0 numAgents
-\f0\b )]\
-        \cf2 print 
-\f1\b0 \cf3 "%4d) P: %-8s" 
-\f0\b \cf0 % (
-\f1\b0 \cf2 self
-\f0\b \cf0 .
-\f1\b0 turn
-\f0\b , 
-\f1\b0 str
-\f0\b (
-\f1\b0 pacman
-\f0\b .
-\f1\b0 nearestPoint
-\f0\b (
-\f1\b0 state
-\f0\b .
-\f1\b0 getPacmanPosition
-\f0\b ()))),
-\f1\b0 \cf3 '| Score: %-5d' 
-\f0\b \cf0 % 
-\f1\b0 state
-\f0\b .
-\f1\b0 score
-\f0\b ,
-\f1\b0 \cf3 '| Ghosts:'
-\f0\b \cf0 , 
-\f1\b0 ghosts\
-      
-\f0\b \cf2 if 
-\f1\b0 self
-\f0\b \cf0 .
-\f1\b0 turn 
-\f0\b % 
-\f1\b0 DRAW_EVERY 
-\f0\b == 
-\f1\b0 \cf3 0
-\f0\b \cf0 :\
-        
-\f1\b0 \cf2 self
-\f0\b \cf0 .
-\f1\b0 draw
-\f0\b (
-\f1\b0 state
-\f0\b )\
-        
-\f1\b0 \cf2 self
-\f0\b \cf0 .
-\f1\b0 pause
-\f0\b ()\
-    \cf2 if 
-\f1\b0 \cf0 state
-\f0\b .
-\f1\b0 _win 
-\f0\b \cf2 or 
-\f1\b0 \cf0 state
-\f0\b .
-\f1\b0 _lose
-\f0\b :\
-      
-\f1\b0 \cf2 self
-\f0\b \cf0 .
-\f1\b0 draw
-\f0\b (
-\f1\b0 state
-\f0\b )\
-    \
-  \cf2 def 
-\f1\b0 \cf0 pause
-\f0\b (
-\f1\b0 \cf2 self
-\f0\b \cf0 ):\
-    
-\f1\b0 time
-\f0\b .
-\f1\b0 sleep
-\f0\b (
-\f1\b0 SLEEP_TIME
-\f0\b )\
-    \
-  \cf2 def 
-\f1\b0 \cf0 draw
-\f0\b (
-\f1\b0 \cf2 self
-\f0\b \cf0 , 
-\f1\b0 state
-\f0\b ):\
-    \cf2 print 
-\f1\b0 \cf0 state\
-  \
-  
-\f0\b \cf2 def 
-\f1\b0 \cf0 finish
-\f0\b (
-\f1\b0 \cf2 self
-\f0\b \cf0 ):\
-    \cf2 pass}
+  def finish(self):
+    pass

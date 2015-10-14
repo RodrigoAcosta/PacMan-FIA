@@ -1,4917 +1,668 @@
-{\rtf1\ansi\ansicpg1252\cocoartf1404\cocoasubrtf110
-{\fonttbl\f0\fmodern\fcharset0 Courier-Bold;\f1\fmodern\fcharset0 Courier;\f2\fmodern\fcharset0 Courier-Oblique;
-}
-{\colortbl;\red255\green255\blue255;\red0\green0\blue255;\red15\green112\blue1;\red251\green0\blue7;
-\red118\green0\blue2;}
-\paperw11900\paperh16840\margl1440\margr1440\vieww10800\viewh8400\viewkind0
-\deftab720
-\pard\pardeftab720\partightenfactor0
+# graphicsDisplay.py
+# ------------------
+# Licensing Information: Please do not distribute or publish solutions to this
+# project. You are free to use and extend these projects for educational
+# purposes. The Pacman AI projects were developed at UC Berkeley, primarily by
+# John DeNero (denero@cs.berkeley.edu) and Dan Klein (klein@cs.berkeley.edu).
+# For more info, see http://inst.eecs.berkeley.edu/~cs188/sp09/pacman.html
 
-\f0\b\fs26 \cf2 \expnd0\expndtw0\kerning0
-from 
-\f1\b0 \cf0 graphicsUtils 
-\f0\b \cf2 import \cf0 *        \
-\cf2 import 
-\f1\b0 \cf0 math
-\f0\b , 
-\f1\b0 time\
+from graphicsUtils import *
+import math, time
+from game import Directions
 
-\f0\b \cf2 from 
-\f1\b0 \cf0 game 
-\f0\b \cf2 import 
-\f1\b0 \cf0 Directions\
-\
-\pard\pardeftab720\partightenfactor0
+###########################
+#  GRAPHICS DISPLAY CODE  #
+###########################
 
-\f2\i \cf3 ###########################\
-#  GRAPHICS DISPLAY CODE  #\
-###########################\
-\
-# Most code by Dan Klein and John Denero written or rewritten for cs188, UC Berkeley.\
-# Some code from a Pacman implementation by LiveWires, and used / modified with permission.\
-\
-\pard\pardeftab720\partightenfactor0
+# Most code by Dan Klein and John Denero written or rewritten for cs188, UC Berkeley.
+# Some code from a Pacman implementation by LiveWires, and used / modified with permission.
 
-\f1\i0 \cf0 FRAME_TIME
-\f0\b =.
-\f1\b0 \cf4 1 
-\f2\i \cf3 # The time that pacman's animation last\
+DEFAULT_GRID_SIZE = 30.0
+INFO_PANE_HEIGHT = 35
+BACKGROUND_COLOR = formatColor(0,0,0)
+WALL_COLOR = formatColor(0.0/255.0, 51.0/255.0, 255.0/255.0)
+INFO_PANE_COLOR = formatColor(.4,.4,0)
+SCORE_COLOR = formatColor(.9, .9, .9)
+PACMAN_OUTLINE_WIDTH = 2
+PACMAN_CAPTURE_OUTLINE_WIDTH = 4
 
-\f1\i0 \cf0 PAUSE_TIME
-\f0\b =
-\f1\b0 \cf4 0   
-\f2\i \cf3 # Pause time between frames\
+GHOST_COLORS = []
+GHOST_COLORS.append(formatColor(.9,0,0)) # Red
+GHOST_COLORS.append(formatColor(0,.3,.9)) # Blue
+GHOST_COLORS.append(formatColor(.98,.41,.07)) # Orange
+GHOST_COLORS.append(formatColor(.1,.75,.7)) # Green
+GHOST_COLORS.append(formatColor(1.0,0.6,0.0)) # Yellow
+GHOST_COLORS.append(formatColor(.4,0.13,0.91)) # Purple
 
-\f1\i0 \cf0 DEFAULT_GRID_SIZE 
-\f0\b = 
-\f1\b0 \cf4 30.0\
-\cf0 INFO_PANE_HEIGHT 
-\f0\b = 
-\f1\b0 \cf4 35\
-\cf0 BACKGROUND_COLOR 
-\f0\b = 
-\f1\b0 formatColor
-\f0\b (
-\f1\b0 \cf4 0
-\f0\b \cf0 ,
-\f1\b0 \cf4 0
-\f0\b \cf0 ,
-\f1\b0 \cf4 0
-\f0\b \cf0 )    \
+TEAM_COLORS = GHOST_COLORS[:2]
 
-\f1\b0 WALL_COLOR 
-\f0\b = 
-\f1\b0 formatColor
-\f0\b (
-\f1\b0 \cf4 0.0
-\f0\b \cf0 /
-\f1\b0 \cf4 255.0
-\f0\b \cf0 , 
-\f1\b0 \cf4 51.0
-\f0\b \cf0 /
-\f1\b0 \cf4 255.0
-\f0\b \cf0 , 
-\f1\b0 \cf4 255.0
-\f0\b \cf0 /
-\f1\b0 \cf4 255.0
-\f0\b \cf0 )\
+GHOST_SHAPE = [
+    ( 0,    0.3 ),
+    ( 0.25, 0.75 ),
+    ( 0.5,  0.3 ),
+    ( 0.75, 0.75 ),
+    ( 0.75, -0.5 ),
+    ( 0.5,  -0.75 ),
+    (-0.5,  -0.75 ),
+    (-0.75, -0.5 ),
+    (-0.75, 0.75 ),
+    (-0.5,  0.3 ),
+    (-0.25, 0.75 )
+  ]
+GHOST_SIZE = 0.65
+SCARED_COLOR = formatColor(1,1,1)
 
-\f1\b0 INFO_PANE_COLOR 
-\f0\b = 
-\f1\b0 formatColor
-\f0\b (.
-\f1\b0 \cf4 4
-\f0\b \cf0 ,.
-\f1\b0 \cf4 4
-\f0\b \cf0 ,
-\f1\b0 \cf4 0
-\f0\b \cf0 )\
+GHOST_VEC_COLORS = map(colorToVector, GHOST_COLORS)
 
-\f1\b0 SCORE_COLOR 
-\f0\b = 
-\f1\b0 formatColor
-\f0\b (.
-\f1\b0 \cf4 9
-\f0\b \cf0 , .
-\f1\b0 \cf4 9
-\f0\b \cf0 , .
-\f1\b0 \cf4 9
-\f0\b \cf0 )\
+PACMAN_COLOR = formatColor(255.0/255.0,255.0/255.0,61.0/255)
+PACMAN_SCALE = 0.5
+#pacman_speed = 0.25
 
-\f1\b0 PACMAN_OUTLINE_WIDTH 
-\f0\b = 
-\f1\b0 \cf4 2\
-\cf0 PACMAN_CAPTURE_OUTLINE_WIDTH 
-\f0\b = 
-\f1\b0 \cf4 4\
-\
-\cf0 GHOST_COLORS 
-\f0\b = []                       \
+# Food
+FOOD_COLOR = formatColor(1,1,1)
+FOOD_SIZE = 0.1
 
-\f1\b0 GHOST_COLORS
-\f0\b .
-\f1\b0 append
-\f0\b (
-\f1\b0 formatColor
-\f0\b (.
-\f1\b0 \cf4 9
-\f0\b \cf0 ,
-\f1\b0 \cf4 0
-\f0\b \cf0 ,
-\f1\b0 \cf4 0
-\f0\b \cf0 )) 
-\f2\i\b0 \cf3 # Red\
+# Laser
+LASER_COLOR = formatColor(1,0,0)
+LASER_SIZE = 0.02
 
-\f1\i0 \cf0 GHOST_COLORS
-\f0\b .
-\f1\b0 append
-\f0\b (
-\f1\b0 formatColor
-\f0\b (
-\f1\b0 \cf4 0
-\f0\b \cf0 ,.
-\f1\b0 \cf4 3
-\f0\b \cf0 ,.
-\f1\b0 \cf4 9
-\f0\b \cf0 )) 
-\f2\i\b0 \cf3 # Blue\
+# Capsule graphics
+CAPSULE_COLOR = formatColor(1,1,1)
+CAPSULE_SIZE = 0.25
 
-\f1\i0 \cf0 GHOST_COLORS
-\f0\b .
-\f1\b0 append
-\f0\b (
-\f1\b0 formatColor
-\f0\b (.
-\f1\b0 \cf4 98
-\f0\b \cf0 ,.
-\f1\b0 \cf4 41
-\f0\b \cf0 ,.
-\f1\b0 \cf4 07
-\f0\b \cf0 )) 
-\f2\i\b0 \cf3 # Orange\
+# Drawing walls
+WALL_RADIUS = 0.15
 
-\f1\i0 \cf0 GHOST_COLORS
-\f0\b .
-\f1\b0 append
-\f0\b (
-\f1\b0 formatColor
-\f0\b (.
-\f1\b0 \cf4 1
-\f0\b \cf0 ,.
-\f1\b0 \cf4 75
-\f0\b \cf0 ,.
-\f1\b0 \cf4 7
-\f0\b \cf0 )) 
-\f2\i\b0 \cf3 # Green\
+class InfoPane:
+  def __init__(self, layout, gridSize):
+    self.gridSize = gridSize
+    self.width = (layout.width) * gridSize
+    self.base = (layout.height + 1) * gridSize
+    self.height = INFO_PANE_HEIGHT
+    self.fontSize = 24
+    self.textColor = PACMAN_COLOR
+    self.drawPane()
 
-\f1\i0 \cf0 GHOST_COLORS
-\f0\b .
-\f1\b0 append
-\f0\b (
-\f1\b0 formatColor
-\f0\b (
-\f1\b0 \cf4 1.0
-\f0\b \cf0 ,
-\f1\b0 \cf4 0.6
-\f0\b \cf0 ,
-\f1\b0 \cf4 0.0
-\f0\b \cf0 )) 
-\f2\i\b0 \cf3 # Yellow\
+  def toScreen(self, pos, y = None):
+    """
+      Translates a point relative from the bottom left of the info pane.
+    """
+    if y == None:
+      x,y = pos
+    else:
+      x = pos
 
-\f1\i0 \cf0 GHOST_COLORS
-\f0\b .
-\f1\b0 append
-\f0\b (
-\f1\b0 formatColor
-\f0\b (.
-\f1\b0 \cf4 4
-\f0\b \cf0 ,
-\f1\b0 \cf4 0.13
-\f0\b \cf0 ,
-\f1\b0 \cf4 0.91
-\f0\b \cf0 )) 
-\f2\i\b0 \cf3 # Purple\
-\
+    x = self.gridSize + x # Margin
+    y = self.base + y
+    return x,y
 
-\f1\i0 \cf0 TEAM_COLORS 
-\f0\b = 
-\f1\b0 GHOST_COLORS
-\f0\b [:
-\f1\b0 \cf4 2
-\f0\b \cf0 ]\
-\
+  def drawPane(self):
+    self.scoreText = text( self.toScreen(0, 0  ), self.textColor, "SCORE:    0", "Times", self.fontSize, "bold")
 
-\f1\b0 GHOST_SHAPE 
-\f0\b = [                \
-    ( 
-\f1\b0 \cf4 0
-\f0\b \cf0 ,    
-\f1\b0 \cf4 0.3 
-\f0\b \cf0 ),            \
-    ( 
-\f1\b0 \cf4 0.25
-\f0\b \cf0 , 
-\f1\b0 \cf4 0.75 
-\f0\b \cf0 ),           \
-    ( 
-\f1\b0 \cf4 0.5
-\f0\b \cf0 ,  
-\f1\b0 \cf4 0.3 
-\f0\b \cf0 ),\
-    ( 
-\f1\b0 \cf4 0.75
-\f0\b \cf0 , 
-\f1\b0 \cf4 0.75 
-\f0\b \cf0 ),\
-    ( 
-\f1\b0 \cf4 0.75
-\f0\b \cf0 , -
-\f1\b0 \cf4 0.5 
-\f0\b \cf0 ),\
-    ( 
-\f1\b0 \cf4 0.5
-\f0\b \cf0 ,  -
-\f1\b0 \cf4 0.75 
-\f0\b \cf0 ),\
-    (-
-\f1\b0 \cf4 0.5
-\f0\b \cf0 ,  -
-\f1\b0 \cf4 0.75 
-\f0\b \cf0 ),\
-    (-
-\f1\b0 \cf4 0.75
-\f0\b \cf0 , -
-\f1\b0 \cf4 0.5 
-\f0\b \cf0 ),\
-    (-
-\f1\b0 \cf4 0.75
-\f0\b \cf0 , 
-\f1\b0 \cf4 0.75 
-\f0\b \cf0 ),\
-    (-
-\f1\b0 \cf4 0.5
-\f0\b \cf0 ,  
-\f1\b0 \cf4 0.3 
-\f0\b \cf0 ),\
-    (-
-\f1\b0 \cf4 0.25
-\f0\b \cf0 , 
-\f1\b0 \cf4 0.75 
-\f0\b \cf0 )\
-  ]\
+  def initializeGhostDistances(self, distances):
+    self.ghostDistanceText = []
 
-\f1\b0 GHOST_SIZE 
-\f0\b = 
-\f1\b0 \cf4 0.65\
-\cf0 SCARED_COLOR 
-\f0\b = 
-\f1\b0 formatColor
-\f0\b (
-\f1\b0 \cf4 1
-\f0\b \cf0 ,
-\f1\b0 \cf4 1
-\f0\b \cf0 ,
-\f1\b0 \cf4 1
-\f0\b \cf0 )    \
-\
+    size = 20
+    if self.width < 240:
+      size = 12
+    if self.width < 160:
+      size = 10
 
-\f1\b0 GHOST_VEC_COLORS 
-\f0\b = 
-\f1\b0 map
-\f0\b (
-\f1\b0 colorToVector
-\f0\b , 
-\f1\b0 GHOST_COLORS
-\f0\b )\
-\
+    for i, d in enumerate(distances):
+      t = text( self.toScreen(self.width/2 + self.width/8 * i, 0), GHOST_COLORS[i+1], d, "Times", size, "bold")
+      self.ghostDistanceText.append(t)
 
-\f1\b0 PACMAN_COLOR 
-\f0\b = 
-\f1\b0 formatColor
-\f0\b (
-\f1\b0 \cf4 255.0
-\f0\b \cf0 /
-\f1\b0 \cf4 255.0
-\f0\b \cf0 ,
-\f1\b0 \cf4 255.0
-\f0\b \cf0 /
-\f1\b0 \cf4 255.0
-\f0\b \cf0 ,
-\f1\b0 \cf4 61.0
-\f0\b \cf0 /
-\f1\b0 \cf4 255
-\f0\b \cf0 )\
+  def updateScore(self, score):
+    changeText(self.scoreText, "SCORE: % 4d" % score)
 
-\f1\b0 PACMAN_SCALE 
-\f0\b = 
-\f1\b0 \cf4 0.5  \
-\pard\pardeftab720\partightenfactor0
+  def setTeam(self, isBlue):
+    text = "RED TEAM"
+    if isBlue: text = "BLUE TEAM"
+    self.teamText = text( self.toScreen(300, 0  ), self.textColor, text, "Times", self.fontSize, "bold")
 
-\f2\i \cf3 #pacman_speed = 0.25    \
-\
-# Food\
-\pard\pardeftab720\partightenfactor0
+  def updateGhostDistances(self, distances):
+    if len(distances) == 0: return
+    if 'ghostDistanceText' not in dir(self): self.initializeGhostDistances(distances)
+    else:
+      for i, d in enumerate(distances):
+        changeText(self.ghostDistanceText[i], d)
 
-\f1\i0 \cf0 FOOD_COLOR 
-\f0\b = 
-\f1\b0 formatColor
-\f0\b (
-\f1\b0 \cf4 1
-\f0\b \cf0 ,
-\f1\b0 \cf4 1
-\f0\b \cf0 ,
-\f1\b0 \cf4 1
-\f0\b \cf0 )     \
+  def drawGhost(self):
+    pass
 
-\f1\b0 FOOD_SIZE 
-\f0\b = 
-\f1\b0 \cf4 0.1    \
-\
-\pard\pardeftab720\partightenfactor0
+  def drawPacman(self):
+    pass
 
-\f2\i \cf3 # Laser\
-\pard\pardeftab720\partightenfactor0
+  def drawWarning(self):
+    pass
 
-\f1\i0 \cf0 LASER_COLOR 
-\f0\b = 
-\f1\b0 formatColor
-\f0\b (
-\f1\b0 \cf4 1
-\f0\b \cf0 ,
-\f1\b0 \cf4 0
-\f0\b \cf0 ,
-\f1\b0 \cf4 0
-\f0\b \cf0 )     \
+  def clearIcon(self):
+    pass
 
-\f1\b0 LASER_SIZE 
-\f0\b = 
-\f1\b0 \cf4 0.02   \
-        \
-\pard\pardeftab720\partightenfactor0
+  def updateMessage(self, message):
+    pass
 
-\f2\i \cf3 # Capsule graphics\
-\pard\pardeftab720\partightenfactor0
+  def clearMessage(self):
+    pass
 
-\f1\i0 \cf0 CAPSULE_COLOR 
-\f0\b = 
-\f1\b0 formatColor
-\f0\b (
-\f1\b0 \cf4 1
-\f0\b \cf0 ,
-\f1\b0 \cf4 1
-\f0\b \cf0 ,
-\f1\b0 \cf4 1
-\f0\b \cf0 )\
 
-\f1\b0 CAPSULE_SIZE 
-\f0\b = 
-\f1\b0 \cf4 0.25 \
-\
-\pard\pardeftab720\partightenfactor0
+class PacmanGraphics:
+  def __init__(self, zoom=1.0, frameTime=0.0, capture=False):
+    self.have_window = 0
+    self.currentGhostImages = {}
+    self.pacmanImage = None
+    self.zoom = zoom
+    self.gridSize = DEFAULT_GRID_SIZE * zoom
+    self.capture = capture
+    self.frameTime = frameTime
 
-\f2\i \cf3 # Drawing walls\
-\pard\pardeftab720\partightenfactor0
+  def initialize(self, state, isBlue = False):
+    self.isBlue = isBlue
+    self.startGraphics(state)
 
-\f1\i0 \cf0 WALL_RADIUS 
-\f0\b = 
-\f1\b0 \cf4 0.15\
-\
+    # self.drawDistributions(state)
+    self.distributionImages = None  # Initialized lazily
+    self.drawStaticObjects(state)
+    self.drawAgentObjects(state)
 
-\f0\b \cf2 class 
-\f1\b0 \cf0 InfoPane
-\f0\b :\
-  \cf2 def 
-\f1\b0 \cf0 __init__
-\f0\b (
-\f1\b0 \cf2 self
-\f0\b \cf0 , 
-\f1\b0 layout
-\f0\b , 
-\f1\b0 gridSize
-\f0\b ):\
-    
-\f1\b0 \cf2 self
-\f0\b \cf0 .
-\f1\b0 gridSize 
-\f0\b = 
-\f1\b0 gridSize\
-    \cf2 self
-\f0\b \cf0 .
-\f1\b0 width 
-\f0\b = (
-\f1\b0 layout
-\f0\b .
-\f1\b0 width
-\f0\b ) * 
-\f1\b0 gridSize\
-    \cf2 self
-\f0\b \cf0 .
-\f1\b0 base 
-\f0\b = (
-\f1\b0 layout
-\f0\b .
-\f1\b0 height 
-\f0\b + 
-\f1\b0 \cf4 1
-\f0\b \cf0 ) * 
-\f1\b0 gridSize\
-    \cf2 self
-\f0\b \cf0 .
-\f1\b0 height 
-\f0\b = 
-\f1\b0 INFO_PANE_HEIGHT \
-    \cf2 self
-\f0\b \cf0 .
-\f1\b0 fontSize 
-\f0\b = 
-\f1\b0 \cf4 24\
-    \cf2 self
-\f0\b \cf0 .
-\f1\b0 textColor 
-\f0\b = 
-\f1\b0 PACMAN_COLOR\
-    \cf2 self
-\f0\b \cf0 .
-\f1\b0 drawPane
-\f0\b ()\
-\
-  \cf2 def 
-\f1\b0 \cf0 toScreen
-\f0\b (
-\f1\b0 \cf2 self
-\f0\b \cf0 , 
-\f1\b0 pos
-\f0\b , 
-\f1\b0 y 
-\f0\b = 
-\f1\b0 \cf2 None
-\f0\b \cf0 ):\
-    
-\f1\b0 \cf5 """\
-      Translates a point relative from the bottom left of the info pane.\
-    """\
-    
-\f0\b \cf2 if 
-\f1\b0 \cf0 y 
-\f0\b == 
-\f1\b0 \cf2 None
-\f0\b \cf0 :\
-      
-\f1\b0 x
-\f0\b ,
-\f1\b0 y 
-\f0\b = 
-\f1\b0 pos\
-    
-\f0\b \cf2 else\cf0 :\
-      
-\f1\b0 x 
-\f0\b = 
-\f1\b0 pos\
-      \
-    x 
-\f0\b = 
-\f1\b0 \cf2 self
-\f0\b \cf0 .
-\f1\b0 gridSize 
-\f0\b + 
-\f1\b0 x 
-\f2\i \cf3 # Margin\
-    
-\f1\i0 \cf0 y 
-\f0\b = 
-\f1\b0 \cf2 self
-\f0\b \cf0 .
-\f1\b0 base 
-\f0\b + 
-\f1\b0 y \
-    
-\f0\b \cf2 return 
-\f1\b0 \cf0 x
-\f0\b ,
-\f1\b0 y\
-\
-  
-\f0\b \cf2 def 
-\f1\b0 \cf0 drawPane
-\f0\b (
-\f1\b0 \cf2 self
-\f0\b \cf0 ):\
-    
-\f1\b0 \cf2 self
-\f0\b \cf0 .
-\f1\b0 scoreText 
-\f0\b = 
-\f1\b0 text
-\f0\b ( 
-\f1\b0 \cf2 self
-\f0\b \cf0 .
-\f1\b0 toScreen
-\f0\b (
-\f1\b0 \cf4 0
-\f0\b \cf0 , 
-\f1\b0 \cf4 0  
-\f0\b \cf0 ), 
-\f1\b0 \cf2 self
-\f0\b \cf0 .
-\f1\b0 textColor
-\f0\b , 
-\f1\b0 \cf4 "SCORE:    0"
-\f0\b \cf0 , 
-\f1\b0 \cf4 "Times"
-\f0\b \cf0 , 
-\f1\b0 \cf2 self
-\f0\b \cf0 .
-\f1\b0 fontSize
-\f0\b , 
-\f1\b0 \cf4 "bold"
-\f0\b \cf0 )\
-\
-  \cf2 def 
-\f1\b0 \cf0 initializeGhostDistances
-\f0\b (
-\f1\b0 \cf2 self
-\f0\b \cf0 , 
-\f1\b0 distances
-\f0\b ):\
-    
-\f1\b0 \cf2 self
-\f0\b \cf0 .
-\f1\b0 ghostDistanceText 
-\f0\b = []\
-    \
-    
-\f1\b0 size 
-\f0\b = 
-\f1\b0 \cf4 20\
-    
-\f0\b \cf2 if 
-\f1\b0 self
-\f0\b \cf0 .
-\f1\b0 width 
-\f0\b < 
-\f1\b0 \cf4 240
-\f0\b \cf0 :\
-      
-\f1\b0 size 
-\f0\b = 
-\f1\b0 \cf4 12\
-    
-\f0\b \cf2 if 
-\f1\b0 self
-\f0\b \cf0 .
-\f1\b0 width 
-\f0\b < 
-\f1\b0 \cf4 160
-\f0\b \cf0 :\
-      
-\f1\b0 size 
-\f0\b = 
-\f1\b0 \cf4 10\
-      \
-    
-\f0\b \cf2 for 
-\f1\b0 \cf0 i
-\f0\b , 
-\f1\b0 d 
-\f0\b \cf2 in 
-\f1\b0 \cf0 enumerate
-\f0\b (
-\f1\b0 distances
-\f0\b ):\
-      
-\f1\b0 t 
-\f0\b = 
-\f1\b0 text
-\f0\b ( 
-\f1\b0 \cf2 self
-\f0\b \cf0 .
-\f1\b0 toScreen
-\f0\b (
-\f1\b0 \cf2 self
-\f0\b \cf0 .
-\f1\b0 width
-\f0\b /
-\f1\b0 \cf4 2 
-\f0\b \cf0 + 
-\f1\b0 \cf2 self
-\f0\b \cf0 .
-\f1\b0 width
-\f0\b /
-\f1\b0 \cf4 8 
-\f0\b \cf0 * 
-\f1\b0 i
-\f0\b , 
-\f1\b0 \cf4 0
-\f0\b \cf0 ), 
-\f1\b0 GHOST_COLORS
-\f0\b [
-\f1\b0 i
-\f0\b +
-\f1\b0 \cf4 1
-\f0\b \cf0 ], 
-\f1\b0 d
-\f0\b , 
-\f1\b0 \cf4 "Times"
-\f0\b \cf0 , 
-\f1\b0 size
-\f0\b , 
-\f1\b0 \cf4 "bold"
-\f0\b \cf0 )\
-      
-\f1\b0 \cf2 self
-\f0\b \cf0 .
-\f1\b0 ghostDistanceText
-\f0\b .
-\f1\b0 append
-\f0\b (
-\f1\b0 t
-\f0\b )\
-          \
-  \cf2 def 
-\f1\b0 \cf0 updateScore
-\f0\b (
-\f1\b0 \cf2 self
-\f0\b \cf0 , 
-\f1\b0 score
-\f0\b ):\
-    
-\f1\b0 changeText
-\f0\b (
-\f1\b0 \cf2 self
-\f0\b \cf0 .
-\f1\b0 scoreText
-\f0\b , 
-\f1\b0 \cf4 "SCORE: % 4d" 
-\f0\b \cf0 % 
-\f1\b0 score
-\f0\b )\
-\
-  \cf2 def 
-\f1\b0 \cf0 setTeam
-\f0\b (
-\f1\b0 \cf2 self
-\f0\b \cf0 , 
-\f1\b0 isBlue
-\f0\b ):\
-    
-\f1\b0 text 
-\f0\b = 
-\f1\b0 \cf4 "RED TEAM"\
-    
-\f0\b \cf2 if 
-\f1\b0 \cf0 isBlue
-\f0\b : 
-\f1\b0 text 
-\f0\b = 
-\f1\b0 \cf4 "BLUE TEAM"\
-    \cf2 self
-\f0\b \cf0 .
-\f1\b0 teamText 
-\f0\b = 
-\f1\b0 text
-\f0\b ( 
-\f1\b0 \cf2 self
-\f0\b \cf0 .
-\f1\b0 toScreen
-\f0\b (
-\f1\b0 \cf4 300
-\f0\b \cf0 , 
-\f1\b0 \cf4 0  
-\f0\b \cf0 ), 
-\f1\b0 \cf2 self
-\f0\b \cf0 .
-\f1\b0 textColor
-\f0\b , 
-\f1\b0 text
-\f0\b , 
-\f1\b0 \cf4 "Times"
-\f0\b \cf0 , 
-\f1\b0 \cf2 self
-\f0\b \cf0 .
-\f1\b0 fontSize
-\f0\b , 
-\f1\b0 \cf4 "bold"
-\f0\b \cf0 )\
-    \
-  \cf2 def 
-\f1\b0 \cf0 updateGhostDistances
-\f0\b (
-\f1\b0 \cf2 self
-\f0\b \cf0 , 
-\f1\b0 distances
-\f0\b ):\
-    \cf2 if 
-\f1\b0 \cf4 'ghostDistanceText' 
-\f0\b \cf2 not in 
-\f1\b0 \cf0 dir
-\f0\b (
-\f1\b0 \cf2 self
-\f0\b \cf0 ): 
-\f1\b0 \cf2 self
-\f0\b \cf0 .
-\f1\b0 initializeGhostDistances
-\f0\b (
-\f1\b0 distances
-\f0\b )\
-    \cf2 else\cf0 :\
-      \cf2 for 
-\f1\b0 \cf0 i
-\f0\b , 
-\f1\b0 d 
-\f0\b \cf2 in 
-\f1\b0 \cf0 enumerate
-\f0\b (
-\f1\b0 distances
-\f0\b ):\
-        
-\f1\b0 changeText
-\f0\b (
-\f1\b0 \cf2 self
-\f0\b \cf0 .
-\f1\b0 ghostDistanceText
-\f0\b [
-\f1\b0 i
-\f0\b ], 
-\f1\b0 d
-\f0\b )\
-    \
-  \cf2 def 
-\f1\b0 \cf0 drawGhost
-\f0\b (
-\f1\b0 \cf2 self
-\f0\b \cf0 ):\
-    \cf2 pass\
-  \
-  def 
-\f1\b0 \cf0 drawPacman
-\f0\b (
-\f1\b0 \cf2 self
-\f0\b \cf0 ):\
-    \cf2 pass\
-    \
-  def 
-\f1\b0 \cf0 drawWarning
-\f0\b (
-\f1\b0 \cf2 self
-\f0\b \cf0 ):\
-    \cf2 pass\
-    \
-  def 
-\f1\b0 \cf0 clearIcon
-\f0\b (
-\f1\b0 \cf2 self
-\f0\b \cf0 ):\
-    \cf2 pass\
-    \
-  def 
-\f1\b0 \cf0 updateMessage
-\f0\b (
-\f1\b0 \cf2 self
-\f0\b \cf0 , 
-\f1\b0 message
-\f0\b ):\
-    \cf2 pass\
-    \
-  def 
-\f1\b0 \cf0 clearMessage
-\f0\b (
-\f1\b0 \cf2 self
-\f0\b \cf0 ):\
-    \cf2 pass\
-\
-\
-class 
-\f1\b0 \cf0 PacmanGraphics
-\f0\b :\
-  \cf2 def 
-\f1\b0 \cf0 __init__
-\f0\b (
-\f1\b0 \cf2 self
-\f0\b \cf0 , 
-\f1\b0 zoom
-\f0\b =
-\f1\b0 \cf4 1.0
-\f0\b \cf0 , 
-\f1\b0 capture 
-\f0\b = \cf2 False\cf0 ):  \
-    
-\f1\b0 \cf2 self
-\f0\b \cf0 .
-\f1\b0 have_window 
-\f0\b = 
-\f1\b0 \cf4 0\
-    \cf2 self
-\f0\b \cf0 .
-\f1\b0 currentGhostImages 
-\f0\b = \{\}\
-    
-\f1\b0 \cf2 self
-\f0\b \cf0 .
-\f1\b0 pacmanImage 
-\f0\b = 
-\f1\b0 \cf2 None\
-    self
-\f0\b \cf0 .
-\f1\b0 zoom 
-\f0\b = 
-\f1\b0 zoom\
-    \cf2 self
-\f0\b \cf0 .
-\f1\b0 gridSize 
-\f0\b = 
-\f1\b0 DEFAULT_GRID_SIZE 
-\f0\b * 
-\f1\b0 zoom\
-    \cf2 self
-\f0\b \cf0 .
-\f1\b0 capture 
-\f0\b = 
-\f1\b0 capture\
-  \
-  
-\f0\b \cf2 def 
-\f1\b0 \cf0 initialize
-\f0\b (
-\f1\b0 \cf2 self
-\f0\b \cf0 , 
-\f1\b0 state
-\f0\b , 
-\f1\b0 isBlue 
-\f0\b = \cf2 False\cf0 ):\
-    
-\f1\b0 \cf2 self
-\f0\b \cf0 .
-\f1\b0 isBlue 
-\f0\b = 
-\f1\b0 isBlue\
-    \cf2 self
-\f0\b \cf0 .
-\f1\b0 startGraphics
-\f0\b (
-\f1\b0 state
-\f0\b )\
-    
-\f1\b0 \cf2 self
-\f0\b \cf0 .
-\f1\b0 drawStaticObjects
-\f0\b (
-\f1\b0 state
-\f0\b )\
-    
-\f1\b0 \cf2 self
-\f0\b \cf0 .
-\f1\b0 drawAgentObjects
-\f0\b (
-\f1\b0 state
-\f0\b )\
-    \
-  \cf2 def 
-\f1\b0 \cf0 startGraphics
-\f0\b (
-\f1\b0 \cf2 self
-\f0\b \cf0 , 
-\f1\b0 state
-\f0\b ):\
-    
-\f1\b0 \cf2 self
-\f0\b \cf0 .
-\f1\b0 layout 
-\f0\b = 
-\f1\b0 state
-\f0\b .
-\f1\b0 layout\
-    layout 
-\f0\b = 
-\f1\b0 \cf2 self
-\f0\b \cf0 .
-\f1\b0 layout\
-    \cf2 self
-\f0\b \cf0 .
-\f1\b0 width 
-\f0\b = 
-\f1\b0 layout
-\f0\b .
-\f1\b0 width\
-    \cf2 self
-\f0\b \cf0 .
-\f1\b0 height 
-\f0\b = 
-\f1\b0 layout
-\f0\b .
-\f1\b0 height\
-    \cf2 self
-\f0\b \cf0 .
-\f1\b0 make_window
-\f0\b (
-\f1\b0 \cf2 self
-\f0\b \cf0 .
-\f1\b0 width
-\f0\b , 
-\f1\b0 \cf2 self
-\f0\b \cf0 .
-\f1\b0 height
-\f0\b )\
-    
-\f1\b0 \cf2 self
-\f0\b \cf0 .
-\f1\b0 infoPane 
-\f0\b = 
-\f1\b0 InfoPane
-\f0\b (
-\f1\b0 layout
-\f0\b , 
-\f1\b0 \cf2 self
-\f0\b \cf0 .
-\f1\b0 gridSize
-\f0\b )\
-    
-\f1\b0 \cf2 self
-\f0\b \cf0 .
-\f1\b0 currentState 
-\f0\b = 
-\f1\b0 layout\
-    \
-  
-\f0\b \cf2 def 
-\f1\b0 \cf0 drawStaticObjects
-\f0\b (
-\f1\b0 \cf2 self
-\f0\b \cf0 , 
-\f1\b0 state
-\f0\b ):\
-    
-\f1\b0 layout 
-\f0\b = 
-\f1\b0 \cf2 self
-\f0\b \cf0 .
-\f1\b0 layout\
-    \cf2 self
-\f0\b \cf0 .
-\f1\b0 drawWalls
-\f0\b (
-\f1\b0 layout
-\f0\b .
-\f1\b0 walls
-\f0\b )\
-    
-\f1\b0 \cf2 self
-\f0\b \cf0 .
-\f1\b0 food 
-\f0\b = 
-\f1\b0 \cf2 self
-\f0\b \cf0 .
-\f1\b0 drawFood
-\f0\b (
-\f1\b0 layout
-\f0\b .
-\f1\b0 food
-\f0\b )\
-    
-\f1\b0 \cf2 self
-\f0\b \cf0 .
-\f1\b0 capsules 
-\f0\b = 
-\f1\b0 \cf2 self
-\f0\b \cf0 .
-\f1\b0 drawCapsules
-\f0\b (
-\f1\b0 layout
-\f0\b .
-\f1\b0 capsules
-\f0\b )\
-    
-\f1\b0 refresh\
-  \
-  
-\f0\b \cf2 def 
-\f1\b0 \cf0 drawAgentObjects
-\f0\b (
-\f1\b0 \cf2 self
-\f0\b \cf0 , 
-\f1\b0 state
-\f0\b ):\
-    
-\f1\b0 \cf2 self
-\f0\b \cf0 .
-\f1\b0 agentImages 
-\f0\b = [] 
-\f2\i\b0 \cf3 # (agentState, image)\
-    
-\f0\i0\b \cf2 for 
-\f1\b0 \cf0 index
-\f0\b , 
-\f1\b0 agent 
-\f0\b \cf2 in 
-\f1\b0 \cf0 enumerate
-\f0\b (
-\f1\b0 state
-\f0\b .
-\f1\b0 agentStates
-\f0\b ):\
-      \cf2 if 
-\f1\b0 \cf0 agent
-\f0\b .
-\f1\b0 isPacman
-\f0\b :\
-        
-\f1\b0 image 
-\f0\b = 
-\f1\b0 \cf2 self
-\f0\b \cf0 .
-\f1\b0 drawPacman
-\f0\b (
-\f1\b0 agent
-\f0\b , 
-\f1\b0 index
-\f0\b )\
-        
-\f1\b0 \cf2 self
-\f0\b \cf0 .
-\f1\b0 agentImages
-\f0\b .
-\f1\b0 append
-\f0\b ( (
-\f1\b0 agent
-\f0\b , 
-\f1\b0 image
-\f0\b ) )\
-      \cf2 else\cf0 :  \
-        
-\f1\b0 image 
-\f0\b = 
-\f1\b0 \cf2 self
-\f0\b \cf0 .
-\f1\b0 drawGhost
-\f0\b (
-\f1\b0 agent
-\f0\b , 
-\f1\b0 index
-\f0\b )\
-        
-\f1\b0 \cf2 self
-\f0\b \cf0 .
-\f1\b0 agentImages
-\f0\b .
-\f1\b0 append
-\f0\b ( (
-\f1\b0 agent
-\f0\b , 
-\f1\b0 image
-\f0\b ) )\
-    
-\f1\b0 refresh\
-    \
-  
-\f0\b \cf2 def 
-\f1\b0 \cf0 swapImages
-\f0\b (
-\f1\b0 \cf2 self
-\f0\b \cf0 , 
-\f1\b0 agentIndex
-\f0\b , 
-\f1\b0 newState
-\f0\b ):\
-    
-\f1\b0 \cf5 """\
-      Changes an image from a ghost to a pacman or vis versa (for capture)\
-    """\
-    \cf0 prevState
-\f0\b , 
-\f1\b0 prevImage 
-\f0\b = 
-\f1\b0 \cf2 self
-\f0\b \cf0 .
-\f1\b0 agentImages
-\f0\b [
-\f1\b0 agentIndex
-\f0\b ]\
-    \cf2 for 
-\f1\b0 \cf0 item 
-\f0\b \cf2 in 
-\f1\b0 \cf0 prevImage
-\f0\b : 
-\f1\b0 remove_from_screen
-\f0\b (
-\f1\b0 item
-\f0\b )\
-    \cf2 if 
-\f1\b0 \cf0 newState
-\f0\b .
-\f1\b0 isPacman
-\f0\b :\
-      
-\f1\b0 image 
-\f0\b = 
-\f1\b0 \cf2 self
-\f0\b \cf0 .
-\f1\b0 drawPacman
-\f0\b (
-\f1\b0 newState
-\f0\b , 
-\f1\b0 agentIndex
-\f0\b )\
-      
-\f1\b0 \cf2 self
-\f0\b \cf0 .
-\f1\b0 agentImages
-\f0\b [
-\f1\b0 agentIndex
-\f0\b ] = (
-\f1\b0 newState
-\f0\b , 
-\f1\b0 image 
-\f0\b )\
-    \cf2 else\cf0 :\
-      
-\f1\b0 image 
-\f0\b = 
-\f1\b0 \cf2 self
-\f0\b \cf0 .
-\f1\b0 drawGhost
-\f0\b (
-\f1\b0 newState
-\f0\b , 
-\f1\b0 agentIndex
-\f0\b )\
-      
-\f1\b0 \cf2 self
-\f0\b \cf0 .
-\f1\b0 agentImages
-\f0\b [
-\f1\b0 agentIndex
-\f0\b ] = (
-\f1\b0 newState
-\f0\b , 
-\f1\b0 image 
-\f0\b )\
-    
-\f1\b0 refresh\
-    \
-  
-\f0\b \cf2 def 
-\f1\b0 \cf0 update
-\f0\b (
-\f1\b0 \cf2 self
-\f0\b \cf0 , 
-\f1\b0 newState
-\f0\b ):\
-    
-\f1\b0 agentIndex 
-\f0\b = 
-\f1\b0 newState
-\f0\b .
-\f1\b0 _agentMoved\
-    agentState 
-\f0\b = 
-\f1\b0 newState
-\f0\b .
-\f1\b0 agentStates
-\f0\b [
-\f1\b0 agentIndex
-\f0\b ]\
-\
-    \cf2 if 
-\f1\b0 \cf0 agentIndex 
-\f0\b == 
-\f1\b0 \cf4 0 
-\f0\b \cf2 and 
-\f1\b0 \cf0 PAUSE_TIME 
-\f0\b > 
-\f1\b0 \cf4 0
-\f0\b \cf0 :\
-      
-\f1\b0 sleep
-\f0\b (
-\f1\b0 PAUSE_TIME
-\f0\b )\
-      
-\f1\b0 refresh\
-\
-    
-\f0\b \cf2 if 
-\f1\b0 self
-\f0\b \cf0 .
-\f1\b0 agentImages
-\f0\b [
-\f1\b0 agentIndex
-\f0\b ][
-\f1\b0 \cf4 0
-\f0\b \cf0 ].
-\f1\b0 isPacman 
-\f0\b != 
-\f1\b0 agentState
-\f0\b .
-\f1\b0 isPacman
-\f0\b : 
-\f1\b0 \cf2 self
-\f0\b \cf0 .
-\f1\b0 swapImages
-\f0\b (
-\f1\b0 agentIndex
-\f0\b , 
-\f1\b0 agentState
-\f0\b )\
-    
-\f1\b0 prevState
-\f0\b , 
-\f1\b0 prevImage 
-\f0\b = 
-\f1\b0 \cf2 self
-\f0\b \cf0 .
-\f1\b0 agentImages
-\f0\b [
-\f1\b0 agentIndex
-\f0\b ]\
-    \cf2 if 
-\f1\b0 \cf0 agentState
-\f0\b .
-\f1\b0 isPacman
-\f0\b :\
-      
-\f1\b0 \cf2 self
-\f0\b \cf0 .
-\f1\b0 animatePacman
-\f0\b (
-\f1\b0 agentState
-\f0\b , 
-\f1\b0 prevState
-\f0\b , 
-\f1\b0 prevImage
-\f0\b )\
-    \cf2 else\cf0 :\
-      
-\f1\b0 \cf2 self
-\f0\b \cf0 .
-\f1\b0 moveGhost
-\f0\b (
-\f1\b0 agentState
-\f0\b , 
-\f1\b0 agentIndex
-\f0\b , 
-\f1\b0 prevState
-\f0\b , 
-\f1\b0 prevImage
-\f0\b )\
-    
-\f1\b0 \cf2 self
-\f0\b \cf0 .
-\f1\b0 agentImages
-\f0\b [
-\f1\b0 agentIndex
-\f0\b ] = (
-\f1\b0 agentState
-\f0\b , 
-\f1\b0 prevImage
-\f0\b )\
-      \
-    \cf2 if 
-\f1\b0 \cf0 newState
-\f0\b .
-\f1\b0 _foodEaten 
-\f0\b != 
-\f1\b0 \cf2 None
-\f0\b \cf0 :\
-      
-\f1\b0 \cf2 self
-\f0\b \cf0 .
-\f1\b0 removeFood
-\f0\b (
-\f1\b0 newState
-\f0\b .
-\f1\b0 _foodEaten
-\f0\b , 
-\f1\b0 \cf2 self
-\f0\b \cf0 .
-\f1\b0 food
-\f0\b )\
-    \cf2 if 
-\f1\b0 \cf0 newState
-\f0\b .
-\f1\b0 _capsuleEaten 
-\f0\b != 
-\f1\b0 \cf2 None
-\f0\b \cf0 :\
-      
-\f1\b0 \cf2 self
-\f0\b \cf0 .
-\f1\b0 removeCapsule
-\f0\b (
-\f1\b0 newState
-\f0\b .
-\f1\b0 _capsuleEaten
-\f0\b , 
-\f1\b0 \cf2 self
-\f0\b \cf0 .
-\f1\b0 capsules
-\f0\b )\
-    
-\f1\b0 \cf2 self
-\f0\b \cf0 .
-\f1\b0 infoPane
-\f0\b .
-\f1\b0 updateScore
-\f0\b (
-\f1\b0 newState
-\f0\b .
-\f1\b0 score
-\f0\b )\
-      \
-  \cf2 def 
-\f1\b0 \cf0 make_window
-\f0\b (
-\f1\b0 \cf2 self
-\f0\b \cf0 , 
-\f1\b0 width
-\f0\b , 
-\f1\b0 height
-\f0\b ):\
-    
-\f1\b0 grid_width 
-\f0\b = (
-\f1\b0 width
-\f0\b -
-\f1\b0 \cf4 1
-\f0\b \cf0 ) * 
-\f1\b0 \cf2 self
-\f0\b \cf0 .
-\f1\b0 gridSize \
-    grid_height 
-\f0\b = (
-\f1\b0 height
-\f0\b -
-\f1\b0 \cf4 1
-\f0\b \cf0 ) * 
-\f1\b0 \cf2 self
-\f0\b \cf0 .
-\f1\b0 gridSize \
-    screen_width 
-\f0\b = 
-\f1\b0 \cf4 2
-\f0\b \cf0 *
-\f1\b0 \cf2 self
-\f0\b \cf0 .
-\f1\b0 gridSize 
-\f0\b + 
-\f1\b0 grid_width\
-    screen_height 
-\f0\b = 
-\f1\b0 \cf4 2
-\f0\b \cf0 *
-\f1\b0 \cf2 self
-\f0\b \cf0 .
-\f1\b0 gridSize 
-\f0\b + 
-\f1\b0 grid_height 
-\f0\b + 
-\f1\b0 INFO_PANE_HEIGHT \
-\
-    begin_graphics
-\f0\b (
-\f1\b0 screen_width
-\f0\b ,    \
-                   
-\f1\b0 screen_height
-\f0\b ,\
-                   
-\f1\b0 BACKGROUND_COLOR
-\f0\b ,\
-                   
-\f1\b0 \cf4 "CS188 Pacman"
-\f0\b \cf0 )\
-    \
-  \cf2 def 
-\f1\b0 \cf0 drawPacman
-\f0\b (
-\f1\b0 \cf2 self
-\f0\b \cf0 , 
-\f1\b0 pacman
-\f0\b , 
-\f1\b0 index
-\f0\b ):\
-    
-\f1\b0 position 
-\f0\b = 
-\f1\b0 \cf2 self
-\f0\b \cf0 .
-\f1\b0 getPosition
-\f0\b (
-\f1\b0 pacman
-\f0\b )\
-    
-\f1\b0 screen_point 
-\f0\b = 
-\f1\b0 \cf2 self
-\f0\b \cf0 .
-\f1\b0 to_screen
-\f0\b (
-\f1\b0 position
-\f0\b )\
-    
-\f1\b0 endpoints 
-\f0\b = 
-\f1\b0 \cf2 self
-\f0\b \cf0 .
-\f1\b0 getEndpoints
-\f0\b (
-\f1\b0 \cf2 self
-\f0\b \cf0 .
-\f1\b0 getDirection
-\f0\b (
-\f1\b0 pacman
-\f0\b ))\
-    \
-    
-\f1\b0 width 
-\f0\b = 
-\f1\b0 PACMAN_OUTLINE_WIDTH\
-    outlineColor 
-\f0\b = 
-\f1\b0 PACMAN_COLOR\
-    fillColor 
-\f0\b = 
-\f1\b0 PACMAN_COLOR\
-\
-    
-\f0\b \cf2 if 
-\f1\b0 self
-\f0\b \cf0 .
-\f1\b0 capture
-\f0\b :\
-      
-\f1\b0 outlineColor 
-\f0\b = 
-\f1\b0 TEAM_COLORS
-\f0\b [
-\f1\b0 index 
-\f0\b % 
-\f1\b0 \cf4 2
-\f0\b \cf0 ]\
-      
-\f1\b0 fillColor 
-\f0\b = 
-\f1\b0 GHOST_COLORS
-\f0\b [
-\f1\b0 index
-\f0\b ]  \
-      
-\f1\b0 width 
-\f0\b = 
-\f1\b0 PACMAN_CAPTURE_OUTLINE_WIDTH\
-      \
-    
-\f0\b \cf2 return \cf0 [
-\f1\b0 circle
-\f0\b (
-\f1\b0 screen_point
-\f0\b , 
-\f1\b0 PACMAN_SCALE 
-\f0\b * 
-\f1\b0 \cf2 self
-\f0\b \cf0 .
-\f1\b0 gridSize
-\f0\b , \
-                   
-\f1\b0 fillColor 
-\f0\b = 
-\f1\b0 fillColor
-\f0\b , 
-\f1\b0 outlineColor 
-\f0\b = 
-\f1\b0 outlineColor
-\f0\b , \
-                   
-\f1\b0 endpoints 
-\f0\b = 
-\f1\b0 endpoints
-\f0\b ,\
-                   
-\f1\b0 width 
-\f0\b = 
-\f1\b0 width
-\f0\b )]\
-    \
-  \cf2 def 
-\f1\b0 \cf0 getEndpoints
-\f0\b (
-\f1\b0 \cf2 self
-\f0\b \cf0 , 
-\f1\b0 direction
-\f0\b , 
-\f1\b0 position
-\f0\b =(
-\f1\b0 \cf4 0
-\f0\b \cf0 ,
-\f1\b0 \cf4 0
-\f0\b \cf0 )):\
-    
-\f1\b0 x
-\f0\b , 
-\f1\b0 y 
-\f0\b = 
-\f1\b0 position\
-    pos 
-\f0\b = 
-\f1\b0 x 
-\f0\b - 
-\f1\b0 int
-\f0\b (
-\f1\b0 x
-\f0\b ) + 
-\f1\b0 y 
-\f0\b - 
-\f1\b0 int
-\f0\b (
-\f1\b0 y
-\f0\b )\
-    
-\f1\b0 width 
-\f0\b = 
-\f1\b0 \cf4 30 
-\f0\b \cf0 + 
-\f1\b0 \cf4 80 
-\f0\b \cf0 * 
-\f1\b0 math
-\f0\b .
-\f1\b0 sin
-\f0\b (
-\f1\b0 math
-\f0\b .
-\f1\b0 pi
-\f0\b *
-\f1\b0 pos
-\f0\b )\
-    \
-    
-\f1\b0 delta 
-\f0\b = 
-\f1\b0 width 
-\f0\b / 
-\f1\b0 \cf4 2\
-    
-\f0\b \cf2 if \cf0 (
-\f1\b0 direction 
-\f0\b == 
-\f1\b0 \cf4 'West'
-\f0\b \cf0 ):\
-      
-\f1\b0 endpoints 
-\f0\b = (
-\f1\b0 \cf4 180
-\f0\b \cf0 +
-\f1\b0 delta
-\f0\b , 
-\f1\b0 \cf4 180
-\f0\b \cf0 -
-\f1\b0 delta
-\f0\b )\
-    \cf2 elif \cf0 (
-\f1\b0 direction 
-\f0\b == 
-\f1\b0 \cf4 'North'
-\f0\b \cf0 ):\
-      
-\f1\b0 endpoints 
-\f0\b = (
-\f1\b0 \cf4 90
-\f0\b \cf0 +
-\f1\b0 delta
-\f0\b , 
-\f1\b0 \cf4 90
-\f0\b \cf0 -
-\f1\b0 delta
-\f0\b )\
-    \cf2 elif \cf0 (
-\f1\b0 direction 
-\f0\b == 
-\f1\b0 \cf4 'South'
-\f0\b \cf0 ):\
-      
-\f1\b0 endpoints 
-\f0\b = (
-\f1\b0 \cf4 270
-\f0\b \cf0 +
-\f1\b0 delta
-\f0\b , 
-\f1\b0 \cf4 270
-\f0\b \cf0 -
-\f1\b0 delta
-\f0\b )\
-    \cf2 else\cf0 :\
-      
-\f1\b0 endpoints 
-\f0\b = (
-\f1\b0 \cf4 0
-\f0\b \cf0 +
-\f1\b0 delta
-\f0\b , 
-\f1\b0 \cf4 0
-\f0\b \cf0 -
-\f1\b0 delta
-\f0\b )\
-    \cf2 return 
-\f1\b0 \cf0 endpoints\
-\
-  
-\f0\b \cf2 def 
-\f1\b0 \cf0 movePacman
-\f0\b (
-\f1\b0 \cf2 self
-\f0\b \cf0 , 
-\f1\b0 position
-\f0\b , 
-\f1\b0 direction
-\f0\b , 
-\f1\b0 image
-\f0\b ):\
-    
-\f1\b0 screenPosition 
-\f0\b = 
-\f1\b0 \cf2 self
-\f0\b \cf0 .
-\f1\b0 to_screen
-\f0\b (
-\f1\b0 position
-\f0\b )\
-    
-\f1\b0 endpoints 
-\f0\b = 
-\f1\b0 \cf2 self
-\f0\b \cf0 .
-\f1\b0 getEndpoints
-\f0\b ( 
-\f1\b0 direction
-\f0\b , 
-\f1\b0 position 
-\f0\b )\
-    
-\f1\b0 r 
-\f0\b = 
-\f1\b0 PACMAN_SCALE 
-\f0\b * 
-\f1\b0 \cf2 self
-\f0\b \cf0 .
-\f1\b0 gridSize \
-    moveCircle
-\f0\b (
-\f1\b0 image
-\f0\b [
-\f1\b0 \cf4 0
-\f0\b \cf0 ], 
-\f1\b0 screenPosition
-\f0\b , 
-\f1\b0 r
-\f0\b , 
-\f1\b0 endpoints
-\f0\b )\
-    
-\f1\b0 refresh\
-    \
-  
-\f0\b \cf2 def 
-\f1\b0 \cf0 animatePacman
-\f0\b (
-\f1\b0 \cf2 self
-\f0\b \cf0 , 
-\f1\b0 pacman
-\f0\b , 
-\f1\b0 prevPacman
-\f0\b , 
-\f1\b0 image
-\f0\b ):\
-    \cf2 if 
-\f1\b0 \cf0 FRAME_TIME 
-\f0\b > 
-\f1\b0 \cf4 0.01
-\f0\b \cf0 :\
-      
-\f1\b0 start 
-\f0\b = 
-\f1\b0 time
-\f0\b .
-\f1\b0 time
-\f0\b ()\
-      
-\f1\b0 fx
-\f0\b , 
-\f1\b0 fy 
-\f0\b = 
-\f1\b0 \cf2 self
-\f0\b \cf0 .
-\f1\b0 getPosition
-\f0\b (
-\f1\b0 prevPacman
-\f0\b )\
-      
-\f1\b0 px
-\f0\b , 
-\f1\b0 py 
-\f0\b = 
-\f1\b0 \cf2 self
-\f0\b \cf0 .
-\f1\b0 getPosition
-\f0\b (
-\f1\b0 pacman
-\f0\b )\
-      
-\f1\b0 frames 
-\f0\b = 
-\f1\b0 \cf4 4.0\
-      
-\f0\b \cf2 for 
-\f1\b0 \cf0 i 
-\f0\b \cf2 in 
-\f1\b0 \cf0 range
-\f0\b (
-\f1\b0 int
-\f0\b (
-\f1\b0 frames
-\f0\b )):\
-        
-\f1\b0 pos 
-\f0\b = 
-\f1\b0 px
-\f0\b *
-\f1\b0 i
-\f0\b /
-\f1\b0 frames 
-\f0\b + 
-\f1\b0 fx
-\f0\b *(
-\f1\b0 frames
-\f0\b -
-\f1\b0 i
-\f0\b )/
-\f1\b0 frames
-\f0\b , 
-\f1\b0 py
-\f0\b *
-\f1\b0 i
-\f0\b /
-\f1\b0 frames 
-\f0\b + 
-\f1\b0 fy
-\f0\b *(
-\f1\b0 frames
-\f0\b -
-\f1\b0 i
-\f0\b )/
-\f1\b0 frames \
-        \cf2 self
-\f0\b \cf0 .
-\f1\b0 movePacman
-\f0\b (
-\f1\b0 pos
-\f0\b , 
-\f1\b0 \cf2 self
-\f0\b \cf0 .
-\f1\b0 getDirection
-\f0\b (
-\f1\b0 pacman
-\f0\b ), 
-\f1\b0 image
-\f0\b )\
-        
-\f2\i\b0 \cf3 # if time.time() - start > FRAME_TIME: return\
-        
-\f1\i0 \cf0 sleep
-\f0\b (
-\f1\b0 FRAME_TIME 
-\f0\b / 
-\f1\b0 \cf4 2 
-\f0\b \cf0 / 
-\f1\b0 frames
-\f0\b )\
-    \cf2 else\cf0 :\
-      
-\f1\b0 \cf2 self
-\f0\b \cf0 .
-\f1\b0 movePacman
-\f0\b (
-\f1\b0 \cf2 self
-\f0\b \cf0 .
-\f1\b0 getPosition
-\f0\b (
-\f1\b0 pacman
-\f0\b ), 
-\f1\b0 \cf2 self
-\f0\b \cf0 .
-\f1\b0 getDirection
-\f0\b (
-\f1\b0 pacman
-\f0\b ), 
-\f1\b0 image
-\f0\b )\
-\
-  \cf2 def 
-\f1\b0 \cf0 getGhostColor
-\f0\b (
-\f1\b0 \cf2 self
-\f0\b \cf0 , 
-\f1\b0 ghost
-\f0\b , 
-\f1\b0 ghostIndex
-\f0\b ):\
-    \cf2 if 
-\f1\b0 \cf0 ghost
-\f0\b .
-\f1\b0 scaredTimer 
-\f0\b > 
-\f1\b0 \cf4 0
-\f0\b \cf0 :\
-      \cf2 return 
-\f1\b0 \cf0 SCARED_COLOR\
-    
-\f0\b \cf2 else\cf0 :\
-      \cf2 return 
-\f1\b0 \cf0 GHOST_COLORS
-\f0\b [
-\f1\b0 ghostIndex
-\f0\b ]\
-\
-  \cf2 def 
-\f1\b0 \cf0 drawGhost
-\f0\b (
-\f1\b0 \cf2 self
-\f0\b \cf0 , 
-\f1\b0 ghost
-\f0\b , 
-\f1\b0 agentIndex
-\f0\b ):\
-    
-\f1\b0 pos 
-\f0\b = 
-\f1\b0 \cf2 self
-\f0\b \cf0 .
-\f1\b0 getPosition
-\f0\b (
-\f1\b0 ghost
-\f0\b )\
-    
-\f1\b0 dir 
-\f0\b = 
-\f1\b0 \cf2 self
-\f0\b \cf0 .
-\f1\b0 getDirection
-\f0\b (
-\f1\b0 ghost
-\f0\b )\
-    (
-\f1\b0 screen_x
-\f0\b , 
-\f1\b0 screen_y
-\f0\b ) = (
-\f1\b0 \cf2 self
-\f0\b \cf0 .
-\f1\b0 to_screen
-\f0\b (
-\f1\b0 pos
-\f0\b ) ) \
-    
-\f1\b0 coords 
-\f0\b = []          \
-    \cf2 for \cf0 (
-\f1\b0 x
-\f0\b , 
-\f1\b0 y
-\f0\b ) \cf2 in 
-\f1\b0 \cf0 GHOST_SHAPE
-\f0\b :\
-      
-\f1\b0 coords
-\f0\b .
-\f1\b0 append
-\f0\b ((
-\f1\b0 x
-\f0\b *
-\f1\b0 \cf2 self
-\f0\b \cf0 .
-\f1\b0 gridSize
-\f0\b *
-\f1\b0 GHOST_SIZE 
-\f0\b + 
-\f1\b0 screen_x
-\f0\b , 
-\f1\b0 y
-\f0\b *
-\f1\b0 \cf2 self
-\f0\b \cf0 .
-\f1\b0 gridSize
-\f0\b *
-\f1\b0 GHOST_SIZE 
-\f0\b + 
-\f1\b0 screen_y
-\f0\b ))\
-\
-    
-\f1\b0 colour 
-\f0\b = 
-\f1\b0 \cf2 self
-\f0\b \cf0 .
-\f1\b0 getGhostColor
-\f0\b (
-\f1\b0 ghost
-\f0\b , 
-\f1\b0 agentIndex
-\f0\b )\
-    
-\f1\b0 body 
-\f0\b = 
-\f1\b0 polygon
-\f0\b (
-\f1\b0 coords
-\f0\b , 
-\f1\b0 colour
-\f0\b , 
-\f1\b0 filled 
-\f0\b = 
-\f1\b0 \cf4 1
-\f0\b \cf0 )\
-    
-\f1\b0 WHITE 
-\f0\b = 
-\f1\b0 formatColor
-\f0\b (
-\f1\b0 \cf4 1.0
-\f0\b \cf0 , 
-\f1\b0 \cf4 1.0
-\f0\b \cf0 , 
-\f1\b0 \cf4 1.0
-\f0\b \cf0 )\
-    
-\f1\b0 BLACK 
-\f0\b = 
-\f1\b0 formatColor
-\f0\b (
-\f1\b0 \cf4 0.0
-\f0\b \cf0 , 
-\f1\b0 \cf4 0.0
-\f0\b \cf0 , 
-\f1\b0 \cf4 0.0
-\f0\b \cf0 )\
-    \
-    
-\f1\b0 dx 
-\f0\b = 
-\f1\b0 \cf4 0\
-    \cf0 dy 
-\f0\b = 
-\f1\b0 \cf4 0\
-    
-\f0\b \cf2 if 
-\f1\b0 \cf0 dir 
-\f0\b == 
-\f1\b0 \cf4 'North'
-\f0\b \cf0 :\
-      
-\f1\b0 dy 
-\f0\b = -
-\f1\b0 \cf4 0.2\
-    
-\f0\b \cf2 if 
-\f1\b0 \cf0 dir 
-\f0\b == 
-\f1\b0 \cf4 'South'
-\f0\b \cf0 :\
-      
-\f1\b0 dy 
-\f0\b = 
-\f1\b0 \cf4 0.2\
-    
-\f0\b \cf2 if 
-\f1\b0 \cf0 dir 
-\f0\b == 
-\f1\b0 \cf4 'East'
-\f0\b \cf0 :\
-      
-\f1\b0 dx 
-\f0\b = 
-\f1\b0 \cf4 0.2\
-    
-\f0\b \cf2 if 
-\f1\b0 \cf0 dir 
-\f0\b == 
-\f1\b0 \cf4 'West'
-\f0\b \cf0 :\
-      
-\f1\b0 dx 
-\f0\b = -
-\f1\b0 \cf4 0.2\
-    \cf0 leftEye 
-\f0\b = 
-\f1\b0 circle
-\f0\b ((
-\f1\b0 screen_x
-\f0\b +
-\f1\b0 \cf2 self
-\f0\b \cf0 .
-\f1\b0 gridSize
-\f0\b *
-\f1\b0 GHOST_SIZE
-\f0\b *(-
-\f1\b0 \cf4 0.3
-\f0\b \cf0 +
-\f1\b0 dx
-\f0\b /
-\f1\b0 \cf4 1.5
-\f0\b \cf0 ), 
-\f1\b0 screen_y
-\f0\b -
-\f1\b0 \cf2 self
-\f0\b \cf0 .
-\f1\b0 gridSize
-\f0\b *
-\f1\b0 GHOST_SIZE
-\f0\b *(
-\f1\b0 \cf4 0.3
-\f0\b \cf0 -
-\f1\b0 dy
-\f0\b /
-\f1\b0 \cf4 1.5
-\f0\b \cf0 )), 
-\f1\b0 \cf2 self
-\f0\b \cf0 .
-\f1\b0 gridSize
-\f0\b *
-\f1\b0 GHOST_SIZE
-\f0\b *
-\f1\b0 \cf4 0.2
-\f0\b \cf0 , 
-\f1\b0 WHITE
-\f0\b , 
-\f1\b0 WHITE
-\f0\b )\
-    
-\f1\b0 rightEye 
-\f0\b = 
-\f1\b0 circle
-\f0\b ((
-\f1\b0 screen_x
-\f0\b +
-\f1\b0 \cf2 self
-\f0\b \cf0 .
-\f1\b0 gridSize
-\f0\b *
-\f1\b0 GHOST_SIZE
-\f0\b *(
-\f1\b0 \cf4 0.3
-\f0\b \cf0 +
-\f1\b0 dx
-\f0\b /
-\f1\b0 \cf4 1.5
-\f0\b \cf0 ), 
-\f1\b0 screen_y
-\f0\b -
-\f1\b0 \cf2 self
-\f0\b \cf0 .
-\f1\b0 gridSize
-\f0\b *
-\f1\b0 GHOST_SIZE
-\f0\b *(
-\f1\b0 \cf4 0.3
-\f0\b \cf0 -
-\f1\b0 dy
-\f0\b /
-\f1\b0 \cf4 1.5
-\f0\b \cf0 )), 
-\f1\b0 \cf2 self
-\f0\b \cf0 .
-\f1\b0 gridSize
-\f0\b *
-\f1\b0 GHOST_SIZE
-\f0\b *
-\f1\b0 \cf4 0.2
-\f0\b \cf0 , 
-\f1\b0 WHITE
-\f0\b , 
-\f1\b0 WHITE
-\f0\b )\
-    
-\f1\b0 leftPupil 
-\f0\b = 
-\f1\b0 circle
-\f0\b ((
-\f1\b0 screen_x
-\f0\b +
-\f1\b0 \cf2 self
-\f0\b \cf0 .
-\f1\b0 gridSize
-\f0\b *
-\f1\b0 GHOST_SIZE
-\f0\b *(-
-\f1\b0 \cf4 0.3
-\f0\b \cf0 +
-\f1\b0 dx
-\f0\b ), 
-\f1\b0 screen_y
-\f0\b -
-\f1\b0 \cf2 self
-\f0\b \cf0 .
-\f1\b0 gridSize
-\f0\b *
-\f1\b0 GHOST_SIZE
-\f0\b *(
-\f1\b0 \cf4 0.3
-\f0\b \cf0 -
-\f1\b0 dy
-\f0\b )), 
-\f1\b0 \cf2 self
-\f0\b \cf0 .
-\f1\b0 gridSize
-\f0\b *
-\f1\b0 GHOST_SIZE
-\f0\b *
-\f1\b0 \cf4 0.08
-\f0\b \cf0 , 
-\f1\b0 BLACK
-\f0\b , 
-\f1\b0 BLACK
-\f0\b )\
-    
-\f1\b0 rightPupil 
-\f0\b = 
-\f1\b0 circle
-\f0\b ((
-\f1\b0 screen_x
-\f0\b +
-\f1\b0 \cf2 self
-\f0\b \cf0 .
-\f1\b0 gridSize
-\f0\b *
-\f1\b0 GHOST_SIZE
-\f0\b *(
-\f1\b0 \cf4 0.3
-\f0\b \cf0 +
-\f1\b0 dx
-\f0\b ), 
-\f1\b0 screen_y
-\f0\b -
-\f1\b0 \cf2 self
-\f0\b \cf0 .
-\f1\b0 gridSize
-\f0\b *
-\f1\b0 GHOST_SIZE
-\f0\b *(
-\f1\b0 \cf4 0.3
-\f0\b \cf0 -
-\f1\b0 dy
-\f0\b )), 
-\f1\b0 \cf2 self
-\f0\b \cf0 .
-\f1\b0 gridSize
-\f0\b *
-\f1\b0 GHOST_SIZE
-\f0\b *
-\f1\b0 \cf4 0.08
-\f0\b \cf0 , 
-\f1\b0 BLACK
-\f0\b , 
-\f1\b0 BLACK
-\f0\b )\
-    
-\f1\b0 ghostImageParts 
-\f0\b = []\
-    
-\f1\b0 ghostImageParts
-\f0\b .
-\f1\b0 append
-\f0\b (
-\f1\b0 body
-\f0\b )\
-    
-\f1\b0 ghostImageParts
-\f0\b .
-\f1\b0 append
-\f0\b (
-\f1\b0 leftEye
-\f0\b )\
-    
-\f1\b0 ghostImageParts
-\f0\b .
-\f1\b0 append
-\f0\b (
-\f1\b0 rightEye
-\f0\b )\
-    
-\f1\b0 ghostImageParts
-\f0\b .
-\f1\b0 append
-\f0\b (
-\f1\b0 leftPupil
-\f0\b )\
-    
-\f1\b0 ghostImageParts
-\f0\b .
-\f1\b0 append
-\f0\b (
-\f1\b0 rightPupil
-\f0\b )\
-    \
-    \cf2 return 
-\f1\b0 \cf0 ghostImageParts\
-  \
-  
-\f0\b \cf2 def 
-\f1\b0 \cf0 moveEyes
-\f0\b (
-\f1\b0 \cf2 self
-\f0\b \cf0 , 
-\f1\b0 pos
-\f0\b , 
-\f1\b0 dir
-\f0\b , 
-\f1\b0 eyes
-\f0\b ):\
-    (
-\f1\b0 screen_x
-\f0\b , 
-\f1\b0 screen_y
-\f0\b ) = (
-\f1\b0 \cf2 self
-\f0\b \cf0 .
-\f1\b0 to_screen
-\f0\b (
-\f1\b0 pos
-\f0\b ) ) \
-    
-\f1\b0 dx 
-\f0\b = 
-\f1\b0 \cf4 0\
-    \cf0 dy 
-\f0\b = 
-\f1\b0 \cf4 0\
-    
-\f0\b \cf2 if 
-\f1\b0 \cf0 dir 
-\f0\b == 
-\f1\b0 \cf4 'North'
-\f0\b \cf0 :\
-      
-\f1\b0 dy 
-\f0\b = -
-\f1\b0 \cf4 0.2\
-    
-\f0\b \cf2 if 
-\f1\b0 \cf0 dir 
-\f0\b == 
-\f1\b0 \cf4 'South'
-\f0\b \cf0 :\
-      
-\f1\b0 dy 
-\f0\b = 
-\f1\b0 \cf4 0.2\
-    
-\f0\b \cf2 if 
-\f1\b0 \cf0 dir 
-\f0\b == 
-\f1\b0 \cf4 'East'
-\f0\b \cf0 :\
-      
-\f1\b0 dx 
-\f0\b = 
-\f1\b0 \cf4 0.2\
-    
-\f0\b \cf2 if 
-\f1\b0 \cf0 dir 
-\f0\b == 
-\f1\b0 \cf4 'West'
-\f0\b \cf0 :\
-      
-\f1\b0 dx 
-\f0\b = -
-\f1\b0 \cf4 0.2\
-    \cf0 moveCircle
-\f0\b (
-\f1\b0 eyes
-\f0\b [
-\f1\b0 \cf4 0
-\f0\b \cf0 ],(
-\f1\b0 screen_x
-\f0\b +
-\f1\b0 \cf2 self
-\f0\b \cf0 .
-\f1\b0 gridSize
-\f0\b *
-\f1\b0 GHOST_SIZE
-\f0\b *(-
-\f1\b0 \cf4 0.3
-\f0\b \cf0 +
-\f1\b0 dx
-\f0\b /
-\f1\b0 \cf4 1.5
-\f0\b \cf0 ), 
-\f1\b0 screen_y
-\f0\b -
-\f1\b0 \cf2 self
-\f0\b \cf0 .
-\f1\b0 gridSize
-\f0\b *
-\f1\b0 GHOST_SIZE
-\f0\b *(
-\f1\b0 \cf4 0.3
-\f0\b \cf0 -
-\f1\b0 dy
-\f0\b /
-\f1\b0 \cf4 1.5
-\f0\b \cf0 )), 
-\f1\b0 \cf2 self
-\f0\b \cf0 .
-\f1\b0 gridSize
-\f0\b *
-\f1\b0 GHOST_SIZE
-\f0\b *
-\f1\b0 \cf4 0.2
-\f0\b \cf0 )\
-    
-\f1\b0 moveCircle
-\f0\b (
-\f1\b0 eyes
-\f0\b [
-\f1\b0 \cf4 1
-\f0\b \cf0 ],(
-\f1\b0 screen_x
-\f0\b +
-\f1\b0 \cf2 self
-\f0\b \cf0 .
-\f1\b0 gridSize
-\f0\b *
-\f1\b0 GHOST_SIZE
-\f0\b *(
-\f1\b0 \cf4 0.3
-\f0\b \cf0 +
-\f1\b0 dx
-\f0\b /
-\f1\b0 \cf4 1.5
-\f0\b \cf0 ), 
-\f1\b0 screen_y
-\f0\b -
-\f1\b0 \cf2 self
-\f0\b \cf0 .
-\f1\b0 gridSize
-\f0\b *
-\f1\b0 GHOST_SIZE
-\f0\b *(
-\f1\b0 \cf4 0.3
-\f0\b \cf0 -
-\f1\b0 dy
-\f0\b /
-\f1\b0 \cf4 1.5
-\f0\b \cf0 )), 
-\f1\b0 \cf2 self
-\f0\b \cf0 .
-\f1\b0 gridSize
-\f0\b *
-\f1\b0 GHOST_SIZE
-\f0\b *
-\f1\b0 \cf4 0.2
-\f0\b \cf0 )\
-    
-\f1\b0 moveCircle
-\f0\b (
-\f1\b0 eyes
-\f0\b [
-\f1\b0 \cf4 2
-\f0\b \cf0 ],(
-\f1\b0 screen_x
-\f0\b +
-\f1\b0 \cf2 self
-\f0\b \cf0 .
-\f1\b0 gridSize
-\f0\b *
-\f1\b0 GHOST_SIZE
-\f0\b *(-
-\f1\b0 \cf4 0.3
-\f0\b \cf0 +
-\f1\b0 dx
-\f0\b ), 
-\f1\b0 screen_y
-\f0\b -
-\f1\b0 \cf2 self
-\f0\b \cf0 .
-\f1\b0 gridSize
-\f0\b *
-\f1\b0 GHOST_SIZE
-\f0\b *(
-\f1\b0 \cf4 0.3
-\f0\b \cf0 -
-\f1\b0 dy
-\f0\b )), 
-\f1\b0 \cf2 self
-\f0\b \cf0 .
-\f1\b0 gridSize
-\f0\b *
-\f1\b0 GHOST_SIZE
-\f0\b *
-\f1\b0 \cf4 0.08
-\f0\b \cf0 )\
-    
-\f1\b0 moveCircle
-\f0\b (
-\f1\b0 eyes
-\f0\b [
-\f1\b0 \cf4 3
-\f0\b \cf0 ],(
-\f1\b0 screen_x
-\f0\b +
-\f1\b0 \cf2 self
-\f0\b \cf0 .
-\f1\b0 gridSize
-\f0\b *
-\f1\b0 GHOST_SIZE
-\f0\b *(
-\f1\b0 \cf4 0.3
-\f0\b \cf0 +
-\f1\b0 dx
-\f0\b ), 
-\f1\b0 screen_y
-\f0\b -
-\f1\b0 \cf2 self
-\f0\b \cf0 .
-\f1\b0 gridSize
-\f0\b *
-\f1\b0 GHOST_SIZE
-\f0\b *(
-\f1\b0 \cf4 0.3
-\f0\b \cf0 -
-\f1\b0 dy
-\f0\b )), 
-\f1\b0 \cf2 self
-\f0\b \cf0 .
-\f1\b0 gridSize
-\f0\b *
-\f1\b0 GHOST_SIZE
-\f0\b *
-\f1\b0 \cf4 0.08
-\f0\b \cf0 )\
-    \
-  \cf2 def 
-\f1\b0 \cf0 moveGhost
-\f0\b (
-\f1\b0 \cf2 self
-\f0\b \cf0 , 
-\f1\b0 ghost
-\f0\b , 
-\f1\b0 ghostIndex
-\f0\b , 
-\f1\b0 prevGhost
-\f0\b , 
-\f1\b0 ghostImageParts
-\f0\b ):\
-    
-\f1\b0 old_x
-\f0\b , 
-\f1\b0 old_y 
-\f0\b = 
-\f1\b0 \cf2 self
-\f0\b \cf0 .
-\f1\b0 to_screen
-\f0\b (
-\f1\b0 \cf2 self
-\f0\b \cf0 .
-\f1\b0 getPosition
-\f0\b (
-\f1\b0 prevGhost
-\f0\b ))\
-    
-\f1\b0 new_x
-\f0\b , 
-\f1\b0 new_y 
-\f0\b = 
-\f1\b0 \cf2 self
-\f0\b \cf0 .
-\f1\b0 to_screen
-\f0\b (
-\f1\b0 \cf2 self
-\f0\b \cf0 .
-\f1\b0 getPosition
-\f0\b (
-\f1\b0 ghost
-\f0\b ))\
-    
-\f1\b0 delta 
-\f0\b = 
-\f1\b0 new_x 
-\f0\b - 
-\f1\b0 old_x
-\f0\b , 
-\f1\b0 new_y 
-\f0\b - 
-\f1\b0 old_y\
-    \
-    
-\f0\b \cf2 for 
-\f1\b0 \cf0 ghostImagePart 
-\f0\b \cf2 in 
-\f1\b0 \cf0 ghostImageParts
-\f0\b :\
-      
-\f1\b0 move_by
-\f0\b (
-\f1\b0 ghostImagePart
-\f0\b , 
-\f1\b0 delta
-\f0\b )\
-    
-\f1\b0 refresh\
-    \
-    
-\f0\b \cf2 if 
-\f1\b0 \cf0 ghost
-\f0\b .
-\f1\b0 scaredTimer 
-\f0\b > 
-\f1\b0 \cf4 0
-\f0\b \cf0 :\
-      
-\f1\b0 color 
-\f0\b = 
-\f1\b0 SCARED_COLOR\
-    
-\f0\b \cf2 else\cf0 :\
-      
-\f1\b0 color 
-\f0\b = 
-\f1\b0 GHOST_COLORS
-\f0\b [
-\f1\b0 ghostIndex
-\f0\b ]\
-    
-\f1\b0 edit
-\f0\b (
-\f1\b0 ghostImageParts
-\f0\b [
-\f1\b0 \cf4 0
-\f0\b \cf0 ], (
-\f1\b0 \cf4 'fill'
-\f0\b \cf0 , 
-\f1\b0 color
-\f0\b ), (
-\f1\b0 \cf4 'outline'
-\f0\b \cf0 , 
-\f1\b0 color
-\f0\b ))  \
-    
-\f1\b0 \cf2 self
-\f0\b \cf0 .
-\f1\b0 moveEyes
-\f0\b (
-\f1\b0 \cf2 self
-\f0\b \cf0 .
-\f1\b0 getPosition
-\f0\b (
-\f1\b0 ghost
-\f0\b ), 
-\f1\b0 \cf2 self
-\f0\b \cf0 .
-\f1\b0 getDirection
-\f0\b (
-\f1\b0 ghost
-\f0\b ), 
-\f1\b0 ghostImageParts
-\f0\b [-
-\f1\b0 \cf4 4
-\f0\b \cf0 :])\
-    
-\f1\b0 refresh\
-    \
-  
-\f0\b \cf2 def 
-\f1\b0 \cf0 getPosition
-\f0\b (
-\f1\b0 \cf2 self
-\f0\b \cf0 , 
-\f1\b0 agentState
-\f0\b ):\
-    \cf2 if 
-\f1\b0 \cf0 agentState
-\f0\b .
-\f1\b0 configuration 
-\f0\b == 
-\f1\b0 \cf2 None
-\f0\b \cf0 : \cf2 return \cf0 (-
-\f1\b0 \cf4 1000
-\f0\b \cf0 , -
-\f1\b0 \cf4 1000
-\f0\b \cf0 )\
-    \cf2 return 
-\f1\b0 \cf0 agentState
-\f0\b .
-\f1\b0 getPosition
-\f0\b ()\
-  \
-  \cf2 def 
-\f1\b0 \cf0 getDirection
-\f0\b (
-\f1\b0 \cf2 self
-\f0\b \cf0 , 
-\f1\b0 agentState
-\f0\b ):\
-    \cf2 if 
-\f1\b0 \cf0 agentState
-\f0\b .
-\f1\b0 configuration 
-\f0\b == 
-\f1\b0 \cf2 None
-\f0\b \cf0 : \cf2 return 
-\f1\b0 \cf0 Directions
-\f0\b .
-\f1\b0 STOP\
-    
-\f0\b \cf2 return 
-\f1\b0 \cf0 agentState
-\f0\b .
-\f1\b0 configuration
-\f0\b .
-\f1\b0 getDirection
-\f0\b ()\
-  \
-  \cf2 def 
-\f1\b0 \cf0 finish
-\f0\b (
-\f1\b0 \cf2 self
-\f0\b \cf0 ):\
-    
-\f1\b0 end_graphics
-\f0\b ()\
-  \
-  \cf2 def 
-\f1\b0 \cf0 to_screen
-\f0\b (
-\f1\b0 \cf2 self
-\f0\b \cf0 , 
-\f1\b0 point
-\f0\b ):\
-    ( 
-\f1\b0 x
-\f0\b , 
-\f1\b0 y 
-\f0\b ) = 
-\f1\b0 point\
-    
-\f2\i \cf3 #y = self.height - y\
-    
-\f1\i0 \cf0 x 
-\f0\b = (
-\f1\b0 x 
-\f0\b + 
-\f1\b0 \cf4 1
-\f0\b \cf0 )*
-\f1\b0 \cf2 self
-\f0\b \cf0 .
-\f1\b0 gridSize\
-    y 
-\f0\b = (
-\f1\b0 \cf2 self
-\f0\b \cf0 .
-\f1\b0 height  
-\f0\b - 
-\f1\b0 y
-\f0\b )*
-\f1\b0 \cf2 self
-\f0\b \cf0 .
-\f1\b0 gridSize\
-    
-\f0\b \cf2 return \cf0 ( 
-\f1\b0 x
-\f0\b , 
-\f1\b0 y 
-\f0\b )\
-  \
-  
-\f2\i\b0 \cf3 # Fixes some TK issue with off-center circles\
-  
-\f0\i0\b \cf2 def 
-\f1\b0 \cf0 to_screen2
-\f0\b (
-\f1\b0 \cf2 self
-\f0\b \cf0 , 
-\f1\b0 point
-\f0\b ):\
-    ( 
-\f1\b0 x
-\f0\b , 
-\f1\b0 y 
-\f0\b ) = 
-\f1\b0 point\
-    
-\f2\i \cf3 #y = self.height - y\
-    
-\f1\i0 \cf0 x 
-\f0\b = (
-\f1\b0 x 
-\f0\b + 
-\f1\b0 \cf4 1
-\f0\b \cf0 )*
-\f1\b0 \cf2 self
-\f0\b \cf0 .
-\f1\b0 gridSize\
-    y 
-\f0\b = (
-\f1\b0 \cf2 self
-\f0\b \cf0 .
-\f1\b0 height  
-\f0\b - 
-\f1\b0 y
-\f0\b )*
-\f1\b0 \cf2 self
-\f0\b \cf0 .
-\f1\b0 gridSize\
-    
-\f0\b \cf2 return \cf0 ( 
-\f1\b0 x
-\f0\b , 
-\f1\b0 y 
-\f0\b )\
-  \
-  \cf2 def 
-\f1\b0 \cf0 drawWalls
-\f0\b (
-\f1\b0 \cf2 self
-\f0\b \cf0 , 
-\f1\b0 wallMatrix
-\f0\b ):\
-    
-\f1\b0 wallColor 
-\f0\b = 
-\f1\b0 WALL_COLOR\
-    
-\f0\b \cf2 for 
-\f1\b0 \cf0 xNum
-\f0\b , 
-\f1\b0 x 
-\f0\b \cf2 in 
-\f1\b0 \cf0 enumerate
-\f0\b (
-\f1\b0 wallMatrix
-\f0\b ):\
-      \cf2 if 
-\f1\b0 self
-\f0\b \cf0 .
-\f1\b0 capture 
-\f0\b \cf2 and \cf0 (
-\f1\b0 xNum 
-\f0\b * 
-\f1\b0 \cf4 2
-\f0\b \cf0 ) < 
-\f1\b0 wallMatrix
-\f0\b .
-\f1\b0 width
-\f0\b : 
-\f1\b0 wallColor 
-\f0\b = 
-\f1\b0 TEAM_COLORS
-\f0\b [
-\f1\b0 \cf4 0
-\f0\b \cf0 ]\
-      \cf2 if 
-\f1\b0 self
-\f0\b \cf0 .
-\f1\b0 capture 
-\f0\b \cf2 and \cf0 (
-\f1\b0 xNum 
-\f0\b * 
-\f1\b0 \cf4 2
-\f0\b \cf0 ) >= 
-\f1\b0 wallMatrix
-\f0\b .
-\f1\b0 width
-\f0\b : 
-\f1\b0 wallColor 
-\f0\b = 
-\f1\b0 TEAM_COLORS
-\f0\b [
-\f1\b0 \cf4 1
-\f0\b \cf0 ]\
-\
-      \cf2 for 
-\f1\b0 \cf0 yNum
-\f0\b , 
-\f1\b0 cell 
-\f0\b \cf2 in 
-\f1\b0 \cf0 enumerate
-\f0\b (
-\f1\b0 x
-\f0\b ):\
-        \cf2 if 
-\f1\b0 \cf0 cell
-\f0\b : 
-\f2\i\b0 \cf3 # There's a wall here\
-          
-\f1\i0 \cf0 pos 
-\f0\b = (
-\f1\b0 xNum
-\f0\b , 
-\f1\b0 yNum
-\f0\b )\
-          
-\f1\b0 screen 
-\f0\b = 
-\f1\b0 \cf2 self
-\f0\b \cf0 .
-\f1\b0 to_screen
-\f0\b (
-\f1\b0 pos
-\f0\b )\
-          
-\f1\b0 screen2 
-\f0\b = 
-\f1\b0 \cf2 self
-\f0\b \cf0 .
-\f1\b0 to_screen2
-\f0\b (
-\f1\b0 pos
-\f0\b )\
-          \
-          
-\f2\i\b0 \cf3 # draw each quadrant of the square based on adjacent walls\
-          
-\f1\i0 \cf0 wIsWall 
-\f0\b = 
-\f1\b0 \cf2 self
-\f0\b \cf0 .
-\f1\b0 isWall
-\f0\b (
-\f1\b0 xNum
-\f0\b -
-\f1\b0 \cf4 1
-\f0\b \cf0 , 
-\f1\b0 yNum
-\f0\b , 
-\f1\b0 wallMatrix
-\f0\b )\
-          
-\f1\b0 eIsWall 
-\f0\b = 
-\f1\b0 \cf2 self
-\f0\b \cf0 .
-\f1\b0 isWall
-\f0\b (
-\f1\b0 xNum
-\f0\b +
-\f1\b0 \cf4 1
-\f0\b \cf0 , 
-\f1\b0 yNum
-\f0\b , 
-\f1\b0 wallMatrix
-\f0\b )\
-          
-\f1\b0 nIsWall 
-\f0\b = 
-\f1\b0 \cf2 self
-\f0\b \cf0 .
-\f1\b0 isWall
-\f0\b (
-\f1\b0 xNum
-\f0\b , 
-\f1\b0 yNum
-\f0\b +
-\f1\b0 \cf4 1
-\f0\b \cf0 , 
-\f1\b0 wallMatrix
-\f0\b )\
-          
-\f1\b0 sIsWall 
-\f0\b = 
-\f1\b0 \cf2 self
-\f0\b \cf0 .
-\f1\b0 isWall
-\f0\b (
-\f1\b0 xNum
-\f0\b , 
-\f1\b0 yNum
-\f0\b -
-\f1\b0 \cf4 1
-\f0\b \cf0 , 
-\f1\b0 wallMatrix
-\f0\b )\
-          
-\f1\b0 nwIsWall 
-\f0\b = 
-\f1\b0 \cf2 self
-\f0\b \cf0 .
-\f1\b0 isWall
-\f0\b (
-\f1\b0 xNum
-\f0\b -
-\f1\b0 \cf4 1
-\f0\b \cf0 , 
-\f1\b0 yNum
-\f0\b +
-\f1\b0 \cf4 1
-\f0\b \cf0 , 
-\f1\b0 wallMatrix
-\f0\b )\
-          
-\f1\b0 swIsWall 
-\f0\b = 
-\f1\b0 \cf2 self
-\f0\b \cf0 .
-\f1\b0 isWall
-\f0\b (
-\f1\b0 xNum
-\f0\b -
-\f1\b0 \cf4 1
-\f0\b \cf0 , 
-\f1\b0 yNum
-\f0\b -
-\f1\b0 \cf4 1
-\f0\b \cf0 , 
-\f1\b0 wallMatrix
-\f0\b )\
-          
-\f1\b0 neIsWall 
-\f0\b = 
-\f1\b0 \cf2 self
-\f0\b \cf0 .
-\f1\b0 isWall
-\f0\b (
-\f1\b0 xNum
-\f0\b +
-\f1\b0 \cf4 1
-\f0\b \cf0 , 
-\f1\b0 yNum
-\f0\b +
-\f1\b0 \cf4 1
-\f0\b \cf0 , 
-\f1\b0 wallMatrix
-\f0\b )\
-          
-\f1\b0 seIsWall 
-\f0\b = 
-\f1\b0 \cf2 self
-\f0\b \cf0 .
-\f1\b0 isWall
-\f0\b (
-\f1\b0 xNum
-\f0\b +
-\f1\b0 \cf4 1
-\f0\b \cf0 , 
-\f1\b0 yNum
-\f0\b -
-\f1\b0 \cf4 1
-\f0\b \cf0 , 
-\f1\b0 wallMatrix
-\f0\b )\
-          \
-          
-\f2\i\b0 \cf3 # NE quadrant\
-          
-\f0\i0\b \cf2 if \cf0 (\cf2 not 
-\f1\b0 \cf0 nIsWall
-\f0\b ) \cf2 and \cf0 (\cf2 not 
-\f1\b0 \cf0 eIsWall
-\f0\b ):\
-            
-\f2\i\b0 \cf3 # inner circle\
-            
-\f1\i0 \cf0 circle
-\f0\b (
-\f1\b0 screen2
-\f0\b , 
-\f1\b0 WALL_RADIUS 
-\f0\b * 
-\f1\b0 \cf2 self
-\f0\b \cf0 .
-\f1\b0 gridSize
-\f0\b , 
-\f1\b0 wallColor
-\f0\b , 
-\f1\b0 wallColor
-\f0\b , (
-\f1\b0 \cf4 0
-\f0\b \cf0 ,
-\f1\b0 \cf4 91
-\f0\b \cf0 ), 
-\f1\b0 \cf4 'arc'
-\f0\b \cf0 )\
-          \cf2 if \cf0 (
-\f1\b0 nIsWall
-\f0\b ) \cf2 and \cf0 (\cf2 not 
-\f1\b0 \cf0 eIsWall
-\f0\b ):\
-            
-\f2\i\b0 \cf3 # vertical line\
-            
-\f1\i0 \cf0 line
-\f0\b (
-\f1\b0 add
-\f0\b (
-\f1\b0 screen
-\f0\b , (
-\f1\b0 \cf2 self
-\f0\b \cf0 .
-\f1\b0 gridSize
-\f0\b *
-\f1\b0 WALL_RADIUS
-\f0\b , 
-\f1\b0 \cf4 0
-\f0\b \cf0 )), 
-\f1\b0 add
-\f0\b (
-\f1\b0 screen
-\f0\b , (
-\f1\b0 \cf2 self
-\f0\b \cf0 .
-\f1\b0 gridSize
-\f0\b *
-\f1\b0 WALL_RADIUS
-\f0\b , 
-\f1\b0 \cf2 self
-\f0\b \cf0 .
-\f1\b0 gridSize
-\f0\b *(-
-\f1\b0 \cf4 0.5
-\f0\b \cf0 )-
-\f1\b0 \cf4 1
-\f0\b \cf0 )), 
-\f1\b0 wallColor
-\f0\b )\
-          \cf2 if \cf0 (\cf2 not 
-\f1\b0 \cf0 nIsWall
-\f0\b ) \cf2 and \cf0 (
-\f1\b0 eIsWall
-\f0\b ):\
-            
-\f2\i\b0 \cf3 # horizontal line\
-            
-\f1\i0 \cf0 line
-\f0\b (
-\f1\b0 add
-\f0\b (
-\f1\b0 screen
-\f0\b , (
-\f1\b0 \cf4 0
-\f0\b \cf0 , 
-\f1\b0 \cf2 self
-\f0\b \cf0 .
-\f1\b0 gridSize
-\f0\b *(-
-\f1\b0 \cf4 1
-\f0\b \cf0 )*
-\f1\b0 WALL_RADIUS
-\f0\b )), 
-\f1\b0 add
-\f0\b (
-\f1\b0 screen
-\f0\b , (
-\f1\b0 \cf2 self
-\f0\b \cf0 .
-\f1\b0 gridSize
-\f0\b *
-\f1\b0 \cf4 0.5
-\f0\b \cf0 +
-\f1\b0 \cf4 1
-\f0\b \cf0 , 
-\f1\b0 \cf2 self
-\f0\b \cf0 .
-\f1\b0 gridSize
-\f0\b *(-
-\f1\b0 \cf4 1
-\f0\b \cf0 )*
-\f1\b0 WALL_RADIUS
-\f0\b )), 
-\f1\b0 wallColor
-\f0\b )\
-          \cf2 if \cf0 (
-\f1\b0 nIsWall
-\f0\b ) \cf2 and \cf0 (
-\f1\b0 eIsWall
-\f0\b ) \cf2 and \cf0 (\cf2 not 
-\f1\b0 \cf0 neIsWall
-\f0\b ):\
-            
-\f2\i\b0 \cf3 # outer circle\
-            
-\f1\i0 \cf0 circle
-\f0\b (
-\f1\b0 add
-\f0\b (
-\f1\b0 screen2
-\f0\b , (
-\f1\b0 \cf2 self
-\f0\b \cf0 .
-\f1\b0 gridSize
-\f0\b *
-\f1\b0 \cf4 2
-\f0\b \cf0 *
-\f1\b0 WALL_RADIUS
-\f0\b , 
-\f1\b0 \cf2 self
-\f0\b \cf0 .
-\f1\b0 gridSize
-\f0\b *(-
-\f1\b0 \cf4 2
-\f0\b \cf0 )*
-\f1\b0 WALL_RADIUS
-\f0\b )), 
-\f1\b0 WALL_RADIUS 
-\f0\b * 
-\f1\b0 \cf2 self
-\f0\b \cf0 .
-\f1\b0 gridSize
-\f0\b -
-\f1\b0 \cf4 1
-\f0\b \cf0 , 
-\f1\b0 wallColor
-\f0\b , 
-\f1\b0 wallColor
-\f0\b , (
-\f1\b0 \cf4 180
-\f0\b \cf0 ,
-\f1\b0 \cf4 271
-\f0\b \cf0 ), 
-\f1\b0 \cf4 'arc'
-\f0\b \cf0 )\
-            
-\f1\b0 line
-\f0\b (
-\f1\b0 add
-\f0\b (
-\f1\b0 screen
-\f0\b , (
-\f1\b0 \cf2 self
-\f0\b \cf0 .
-\f1\b0 gridSize
-\f0\b *
-\f1\b0 \cf4 2
-\f0\b \cf0 *
-\f1\b0 WALL_RADIUS
-\f0\b -
-\f1\b0 \cf4 1
-\f0\b \cf0 , 
-\f1\b0 \cf2 self
-\f0\b \cf0 .
-\f1\b0 gridSize
-\f0\b *(-
-\f1\b0 \cf4 1
-\f0\b \cf0 )*
-\f1\b0 WALL_RADIUS
-\f0\b )), 
-\f1\b0 add
-\f0\b (
-\f1\b0 screen
-\f0\b , (
-\f1\b0 \cf2 self
-\f0\b \cf0 .
-\f1\b0 gridSize
-\f0\b *
-\f1\b0 \cf4 0.5
-\f0\b \cf0 +
-\f1\b0 \cf4 1
-\f0\b \cf0 , 
-\f1\b0 \cf2 self
-\f0\b \cf0 .
-\f1\b0 gridSize
-\f0\b *(-
-\f1\b0 \cf4 1
-\f0\b \cf0 )*
-\f1\b0 WALL_RADIUS
-\f0\b )), 
-\f1\b0 wallColor
-\f0\b )\
-            
-\f1\b0 line
-\f0\b (
-\f1\b0 add
-\f0\b (
-\f1\b0 screen
-\f0\b , (
-\f1\b0 \cf2 self
-\f0\b \cf0 .
-\f1\b0 gridSize
-\f0\b *
-\f1\b0 WALL_RADIUS
-\f0\b , 
-\f1\b0 \cf2 self
-\f0\b \cf0 .
-\f1\b0 gridSize
-\f0\b *(-
-\f1\b0 \cf4 2
-\f0\b \cf0 )*
-\f1\b0 WALL_RADIUS
-\f0\b +
-\f1\b0 \cf4 1
-\f0\b \cf0 )), 
-\f1\b0 add
-\f0\b (
-\f1\b0 screen
-\f0\b , (
-\f1\b0 \cf2 self
-\f0\b \cf0 .
-\f1\b0 gridSize
-\f0\b *
-\f1\b0 WALL_RADIUS
-\f0\b , 
-\f1\b0 \cf2 self
-\f0\b \cf0 .
-\f1\b0 gridSize
-\f0\b *(-
-\f1\b0 \cf4 0.5
-\f0\b \cf0 ))), 
-\f1\b0 wallColor
-\f0\b )\
-          \
-          
-\f2\i\b0 \cf3 # NW quadrant\
-          
-\f0\i0\b \cf2 if \cf0 (\cf2 not 
-\f1\b0 \cf0 nIsWall
-\f0\b ) \cf2 and \cf0 (\cf2 not 
-\f1\b0 \cf0 wIsWall
-\f0\b ):\
-            
-\f2\i\b0 \cf3 # inner circle\
-            
-\f1\i0 \cf0 circle
-\f0\b (
-\f1\b0 screen2
-\f0\b , 
-\f1\b0 WALL_RADIUS 
-\f0\b * 
-\f1\b0 \cf2 self
-\f0\b \cf0 .
-\f1\b0 gridSize
-\f0\b , 
-\f1\b0 wallColor
-\f0\b , 
-\f1\b0 wallColor
-\f0\b , (
-\f1\b0 \cf4 90
-\f0\b \cf0 ,
-\f1\b0 \cf4 181
-\f0\b \cf0 ), 
-\f1\b0 \cf4 'arc'
-\f0\b \cf0 )\
-          \cf2 if \cf0 (
-\f1\b0 nIsWall
-\f0\b ) \cf2 and \cf0 (\cf2 not 
-\f1\b0 \cf0 wIsWall
-\f0\b ):\
-            
-\f2\i\b0 \cf3 # vertical line\
-            
-\f1\i0 \cf0 line
-\f0\b (
-\f1\b0 add
-\f0\b (
-\f1\b0 screen
-\f0\b , (
-\f1\b0 \cf2 self
-\f0\b \cf0 .
-\f1\b0 gridSize
-\f0\b *(-
-\f1\b0 \cf4 1
-\f0\b \cf0 )*
-\f1\b0 WALL_RADIUS
-\f0\b , 
-\f1\b0 \cf4 0
-\f0\b \cf0 )), 
-\f1\b0 add
-\f0\b (
-\f1\b0 screen
-\f0\b , (
-\f1\b0 \cf2 self
-\f0\b \cf0 .
-\f1\b0 gridSize
-\f0\b *(-
-\f1\b0 \cf4 1
-\f0\b \cf0 )*
-\f1\b0 WALL_RADIUS
-\f0\b , 
-\f1\b0 \cf2 self
-\f0\b \cf0 .
-\f1\b0 gridSize
-\f0\b *(-
-\f1\b0 \cf4 0.5
-\f0\b \cf0 )-
-\f1\b0 \cf4 1
-\f0\b \cf0 )), 
-\f1\b0 wallColor
-\f0\b )\
-          \cf2 if \cf0 (\cf2 not 
-\f1\b0 \cf0 nIsWall
-\f0\b ) \cf2 and \cf0 (
-\f1\b0 wIsWall
-\f0\b ):\
-            
-\f2\i\b0 \cf3 # horizontal line\
-            
-\f1\i0 \cf0 line
-\f0\b (
-\f1\b0 add
-\f0\b (
-\f1\b0 screen
-\f0\b , (
-\f1\b0 \cf4 0
-\f0\b \cf0 , 
-\f1\b0 \cf2 self
-\f0\b \cf0 .
-\f1\b0 gridSize
-\f0\b *(-
-\f1\b0 \cf4 1
-\f0\b \cf0 )*
-\f1\b0 WALL_RADIUS
-\f0\b )), 
-\f1\b0 add
-\f0\b (
-\f1\b0 screen
-\f0\b , (
-\f1\b0 \cf2 self
-\f0\b \cf0 .
-\f1\b0 gridSize
-\f0\b *(-
-\f1\b0 \cf4 0.5
-\f0\b \cf0 )-
-\f1\b0 \cf4 1
-\f0\b \cf0 , 
-\f1\b0 \cf2 self
-\f0\b \cf0 .
-\f1\b0 gridSize
-\f0\b *(-
-\f1\b0 \cf4 1
-\f0\b \cf0 )*
-\f1\b0 WALL_RADIUS
-\f0\b )), 
-\f1\b0 wallColor
-\f0\b )\
-          \cf2 if \cf0 (
-\f1\b0 nIsWall
-\f0\b ) \cf2 and \cf0 (
-\f1\b0 wIsWall
-\f0\b ) \cf2 and \cf0 (\cf2 not 
-\f1\b0 \cf0 nwIsWall
-\f0\b ):\
-            
-\f2\i\b0 \cf3 # outer circle\
-            
-\f1\i0 \cf0 circle
-\f0\b (
-\f1\b0 add
-\f0\b (
-\f1\b0 screen2
-\f0\b , (
-\f1\b0 \cf2 self
-\f0\b \cf0 .
-\f1\b0 gridSize
-\f0\b *(-
-\f1\b0 \cf4 2
-\f0\b \cf0 )*
-\f1\b0 WALL_RADIUS
-\f0\b , 
-\f1\b0 \cf2 self
-\f0\b \cf0 .
-\f1\b0 gridSize
-\f0\b *(-
-\f1\b0 \cf4 2
-\f0\b \cf0 )*
-\f1\b0 WALL_RADIUS
-\f0\b )), 
-\f1\b0 WALL_RADIUS 
-\f0\b * 
-\f1\b0 \cf2 self
-\f0\b \cf0 .
-\f1\b0 gridSize
-\f0\b -
-\f1\b0 \cf4 1
-\f0\b \cf0 , 
-\f1\b0 wallColor
-\f0\b , 
-\f1\b0 wallColor
-\f0\b , (
-\f1\b0 \cf4 270
-\f0\b \cf0 ,
-\f1\b0 \cf4 361
-\f0\b \cf0 ), 
-\f1\b0 \cf4 'arc'
-\f0\b \cf0 )\
-            
-\f1\b0 line
-\f0\b (
-\f1\b0 add
-\f0\b (
-\f1\b0 screen
-\f0\b , (
-\f1\b0 \cf2 self
-\f0\b \cf0 .
-\f1\b0 gridSize
-\f0\b *(-
-\f1\b0 \cf4 2
-\f0\b \cf0 )*
-\f1\b0 WALL_RADIUS
-\f0\b +
-\f1\b0 \cf4 1
-\f0\b \cf0 , 
-\f1\b0 \cf2 self
-\f0\b \cf0 .
-\f1\b0 gridSize
-\f0\b *(-
-\f1\b0 \cf4 1
-\f0\b \cf0 )*
-\f1\b0 WALL_RADIUS
-\f0\b )), 
-\f1\b0 add
-\f0\b (
-\f1\b0 screen
-\f0\b , (
-\f1\b0 \cf2 self
-\f0\b \cf0 .
-\f1\b0 gridSize
-\f0\b *(-
-\f1\b0 \cf4 0.5
-\f0\b \cf0 ), 
-\f1\b0 \cf2 self
-\f0\b \cf0 .
-\f1\b0 gridSize
-\f0\b *(-
-\f1\b0 \cf4 1
-\f0\b \cf0 )*
-\f1\b0 WALL_RADIUS
-\f0\b )), 
-\f1\b0 wallColor
-\f0\b )\
-            
-\f1\b0 line
-\f0\b (
-\f1\b0 add
-\f0\b (
-\f1\b0 screen
-\f0\b , (
-\f1\b0 \cf2 self
-\f0\b \cf0 .
-\f1\b0 gridSize
-\f0\b *(-
-\f1\b0 \cf4 1
-\f0\b \cf0 )*
-\f1\b0 WALL_RADIUS
-\f0\b , 
-\f1\b0 \cf2 self
-\f0\b \cf0 .
-\f1\b0 gridSize
-\f0\b *(-
-\f1\b0 \cf4 2
-\f0\b \cf0 )*
-\f1\b0 WALL_RADIUS
-\f0\b +
-\f1\b0 \cf4 1
-\f0\b \cf0 )), 
-\f1\b0 add
-\f0\b (
-\f1\b0 screen
-\f0\b , (
-\f1\b0 \cf2 self
-\f0\b \cf0 .
-\f1\b0 gridSize
-\f0\b *(-
-\f1\b0 \cf4 1
-\f0\b \cf0 )*
-\f1\b0 WALL_RADIUS
-\f0\b , 
-\f1\b0 \cf2 self
-\f0\b \cf0 .
-\f1\b0 gridSize
-\f0\b *(-
-\f1\b0 \cf4 0.5
-\f0\b \cf0 ))), 
-\f1\b0 wallColor
-\f0\b )\
-          \
-          
-\f2\i\b0 \cf3 # SE quadrant\
-          
-\f0\i0\b \cf2 if \cf0 (\cf2 not 
-\f1\b0 \cf0 sIsWall
-\f0\b ) \cf2 and \cf0 (\cf2 not 
-\f1\b0 \cf0 eIsWall
-\f0\b ):\
-            
-\f2\i\b0 \cf3 # inner circle\
-            
-\f1\i0 \cf0 circle
-\f0\b (
-\f1\b0 screen2
-\f0\b , 
-\f1\b0 WALL_RADIUS 
-\f0\b * 
-\f1\b0 \cf2 self
-\f0\b \cf0 .
-\f1\b0 gridSize
-\f0\b , 
-\f1\b0 wallColor
-\f0\b , 
-\f1\b0 wallColor
-\f0\b , (
-\f1\b0 \cf4 270
-\f0\b \cf0 ,
-\f1\b0 \cf4 361
-\f0\b \cf0 ), 
-\f1\b0 \cf4 'arc'
-\f0\b \cf0 )\
-          \cf2 if \cf0 (
-\f1\b0 sIsWall
-\f0\b ) \cf2 and \cf0 (\cf2 not 
-\f1\b0 \cf0 eIsWall
-\f0\b ):\
-            
-\f2\i\b0 \cf3 # vertical line\
-            
-\f1\i0 \cf0 line
-\f0\b (
-\f1\b0 add
-\f0\b (
-\f1\b0 screen
-\f0\b , (
-\f1\b0 \cf2 self
-\f0\b \cf0 .
-\f1\b0 gridSize
-\f0\b *
-\f1\b0 WALL_RADIUS
-\f0\b , 
-\f1\b0 \cf4 0
-\f0\b \cf0 )), 
-\f1\b0 add
-\f0\b (
-\f1\b0 screen
-\f0\b , (
-\f1\b0 \cf2 self
-\f0\b \cf0 .
-\f1\b0 gridSize
-\f0\b *
-\f1\b0 WALL_RADIUS
-\f0\b , 
-\f1\b0 \cf2 self
-\f0\b \cf0 .
-\f1\b0 gridSize
-\f0\b *(
-\f1\b0 \cf4 0.5
-\f0\b \cf0 )+
-\f1\b0 \cf4 1
-\f0\b \cf0 )), 
-\f1\b0 wallColor
-\f0\b )\
-          \cf2 if \cf0 (\cf2 not 
-\f1\b0 \cf0 sIsWall
-\f0\b ) \cf2 and \cf0 (
-\f1\b0 eIsWall
-\f0\b ):\
-            
-\f2\i\b0 \cf3 # horizontal line\
-            
-\f1\i0 \cf0 line
-\f0\b (
-\f1\b0 add
-\f0\b (
-\f1\b0 screen
-\f0\b , (
-\f1\b0 \cf4 0
-\f0\b \cf0 , 
-\f1\b0 \cf2 self
-\f0\b \cf0 .
-\f1\b0 gridSize
-\f0\b *(
-\f1\b0 \cf4 1
-\f0\b \cf0 )*
-\f1\b0 WALL_RADIUS
-\f0\b )), 
-\f1\b0 add
-\f0\b (
-\f1\b0 screen
-\f0\b , (
-\f1\b0 \cf2 self
-\f0\b \cf0 .
-\f1\b0 gridSize
-\f0\b *
-\f1\b0 \cf4 0.5
-\f0\b \cf0 +
-\f1\b0 \cf4 1
-\f0\b \cf0 , 
-\f1\b0 \cf2 self
-\f0\b \cf0 .
-\f1\b0 gridSize
-\f0\b *(
-\f1\b0 \cf4 1
-\f0\b \cf0 )*
-\f1\b0 WALL_RADIUS
-\f0\b )), 
-\f1\b0 wallColor
-\f0\b )\
-          \cf2 if \cf0 (
-\f1\b0 sIsWall
-\f0\b ) \cf2 and \cf0 (
-\f1\b0 eIsWall
-\f0\b ) \cf2 and \cf0 (\cf2 not 
-\f1\b0 \cf0 seIsWall
-\f0\b ):\
-            
-\f2\i\b0 \cf3 # outer circle\
-            
-\f1\i0 \cf0 circle
-\f0\b (
-\f1\b0 add
-\f0\b (
-\f1\b0 screen2
-\f0\b , (
-\f1\b0 \cf2 self
-\f0\b \cf0 .
-\f1\b0 gridSize
-\f0\b *
-\f1\b0 \cf4 2
-\f0\b \cf0 *
-\f1\b0 WALL_RADIUS
-\f0\b , 
-\f1\b0 \cf2 self
-\f0\b \cf0 .
-\f1\b0 gridSize
-\f0\b *(
-\f1\b0 \cf4 2
-\f0\b \cf0 )*
-\f1\b0 WALL_RADIUS
-\f0\b )), 
-\f1\b0 WALL_RADIUS 
-\f0\b * 
-\f1\b0 \cf2 self
-\f0\b \cf0 .
-\f1\b0 gridSize
-\f0\b -
-\f1\b0 \cf4 1
-\f0\b \cf0 , 
-\f1\b0 wallColor
-\f0\b , 
-\f1\b0 wallColor
-\f0\b , (
-\f1\b0 \cf4 90
-\f0\b \cf0 ,
-\f1\b0 \cf4 181
-\f0\b \cf0 ), 
-\f1\b0 \cf4 'arc'
-\f0\b \cf0 )\
-            
-\f1\b0 line
-\f0\b (
-\f1\b0 add
-\f0\b (
-\f1\b0 screen
-\f0\b , (
-\f1\b0 \cf2 self
-\f0\b \cf0 .
-\f1\b0 gridSize
-\f0\b *
-\f1\b0 \cf4 2
-\f0\b \cf0 *
-\f1\b0 WALL_RADIUS
-\f0\b -
-\f1\b0 \cf4 1
-\f0\b \cf0 , 
-\f1\b0 \cf2 self
-\f0\b \cf0 .
-\f1\b0 gridSize
-\f0\b *(
-\f1\b0 \cf4 1
-\f0\b \cf0 )*
-\f1\b0 WALL_RADIUS
-\f0\b )), 
-\f1\b0 add
-\f0\b (
-\f1\b0 screen
-\f0\b , (
-\f1\b0 \cf2 self
-\f0\b \cf0 .
-\f1\b0 gridSize
-\f0\b *
-\f1\b0 \cf4 0.5
-\f0\b \cf0 , 
-\f1\b0 \cf2 self
-\f0\b \cf0 .
-\f1\b0 gridSize
-\f0\b *(
-\f1\b0 \cf4 1
-\f0\b \cf0 )*
-\f1\b0 WALL_RADIUS
-\f0\b )), 
-\f1\b0 wallColor
-\f0\b )\
-            
-\f1\b0 line
-\f0\b (
-\f1\b0 add
-\f0\b (
-\f1\b0 screen
-\f0\b , (
-\f1\b0 \cf2 self
-\f0\b \cf0 .
-\f1\b0 gridSize
-\f0\b *
-\f1\b0 WALL_RADIUS
-\f0\b , 
-\f1\b0 \cf2 self
-\f0\b \cf0 .
-\f1\b0 gridSize
-\f0\b *(
-\f1\b0 \cf4 2
-\f0\b \cf0 )*
-\f1\b0 WALL_RADIUS
-\f0\b -
-\f1\b0 \cf4 1
-\f0\b \cf0 )), 
-\f1\b0 add
-\f0\b (
-\f1\b0 screen
-\f0\b , (
-\f1\b0 \cf2 self
-\f0\b \cf0 .
-\f1\b0 gridSize
-\f0\b *
-\f1\b0 WALL_RADIUS
-\f0\b , 
-\f1\b0 \cf2 self
-\f0\b \cf0 .
-\f1\b0 gridSize
-\f0\b *(
-\f1\b0 \cf4 0.5
-\f0\b \cf0 ))), 
-\f1\b0 wallColor
-\f0\b )\
-          \
-          
-\f2\i\b0 \cf3 # SW quadrant\
-          
-\f0\i0\b \cf2 if \cf0 (\cf2 not 
-\f1\b0 \cf0 sIsWall
-\f0\b ) \cf2 and \cf0 (\cf2 not 
-\f1\b0 \cf0 wIsWall
-\f0\b ):\
-            
-\f2\i\b0 \cf3 # inner circle\
-            
-\f1\i0 \cf0 circle
-\f0\b (
-\f1\b0 screen2
-\f0\b , 
-\f1\b0 WALL_RADIUS 
-\f0\b * 
-\f1\b0 \cf2 self
-\f0\b \cf0 .
-\f1\b0 gridSize
-\f0\b , 
-\f1\b0 wallColor
-\f0\b , 
-\f1\b0 wallColor
-\f0\b , (
-\f1\b0 \cf4 180
-\f0\b \cf0 ,
-\f1\b0 \cf4 271
-\f0\b \cf0 ), 
-\f1\b0 \cf4 'arc'
-\f0\b \cf0 )\
-          \cf2 if \cf0 (
-\f1\b0 sIsWall
-\f0\b ) \cf2 and \cf0 (\cf2 not 
-\f1\b0 \cf0 wIsWall
-\f0\b ):\
-            
-\f2\i\b0 \cf3 # vertical line\
-            
-\f1\i0 \cf0 line
-\f0\b (
-\f1\b0 add
-\f0\b (
-\f1\b0 screen
-\f0\b , (
-\f1\b0 \cf2 self
-\f0\b \cf0 .
-\f1\b0 gridSize
-\f0\b *(-
-\f1\b0 \cf4 1
-\f0\b \cf0 )*
-\f1\b0 WALL_RADIUS
-\f0\b , 
-\f1\b0 \cf4 0
-\f0\b \cf0 )), 
-\f1\b0 add
-\f0\b (
-\f1\b0 screen
-\f0\b , (
-\f1\b0 \cf2 self
-\f0\b \cf0 .
-\f1\b0 gridSize
-\f0\b *(-
-\f1\b0 \cf4 1
-\f0\b \cf0 )*
-\f1\b0 WALL_RADIUS
-\f0\b , 
-\f1\b0 \cf2 self
-\f0\b \cf0 .
-\f1\b0 gridSize
-\f0\b *(
-\f1\b0 \cf4 0.5
-\f0\b \cf0 )+
-\f1\b0 \cf4 1
-\f0\b \cf0 )), 
-\f1\b0 wallColor
-\f0\b )\
-          \cf2 if \cf0 (\cf2 not 
-\f1\b0 \cf0 sIsWall
-\f0\b ) \cf2 and \cf0 (
-\f1\b0 wIsWall
-\f0\b ):\
-            
-\f2\i\b0 \cf3 # horizontal line\
-            
-\f1\i0 \cf0 line
-\f0\b (
-\f1\b0 add
-\f0\b (
-\f1\b0 screen
-\f0\b , (
-\f1\b0 \cf4 0
-\f0\b \cf0 , 
-\f1\b0 \cf2 self
-\f0\b \cf0 .
-\f1\b0 gridSize
-\f0\b *(
-\f1\b0 \cf4 1
-\f0\b \cf0 )*
-\f1\b0 WALL_RADIUS
-\f0\b )), 
-\f1\b0 add
-\f0\b (
-\f1\b0 screen
-\f0\b , (
-\f1\b0 \cf2 self
-\f0\b \cf0 .
-\f1\b0 gridSize
-\f0\b *(-
-\f1\b0 \cf4 0.5
-\f0\b \cf0 )-
-\f1\b0 \cf4 1
-\f0\b \cf0 , 
-\f1\b0 \cf2 self
-\f0\b \cf0 .
-\f1\b0 gridSize
-\f0\b *(
-\f1\b0 \cf4 1
-\f0\b \cf0 )*
-\f1\b0 WALL_RADIUS
-\f0\b )), 
-\f1\b0 wallColor
-\f0\b )\
-          \cf2 if \cf0 (
-\f1\b0 sIsWall
-\f0\b ) \cf2 and \cf0 (
-\f1\b0 wIsWall
-\f0\b ) \cf2 and \cf0 (\cf2 not 
-\f1\b0 \cf0 swIsWall
-\f0\b ):\
-            
-\f2\i\b0 \cf3 # outer circle\
-            
-\f1\i0 \cf0 circle
-\f0\b (
-\f1\b0 add
-\f0\b (
-\f1\b0 screen2
-\f0\b , (
-\f1\b0 \cf2 self
-\f0\b \cf0 .
-\f1\b0 gridSize
-\f0\b *(-
-\f1\b0 \cf4 2
-\f0\b \cf0 )*
-\f1\b0 WALL_RADIUS
-\f0\b , 
-\f1\b0 \cf2 self
-\f0\b \cf0 .
-\f1\b0 gridSize
-\f0\b *(
-\f1\b0 \cf4 2
-\f0\b \cf0 )*
-\f1\b0 WALL_RADIUS
-\f0\b )), 
-\f1\b0 WALL_RADIUS 
-\f0\b * 
-\f1\b0 \cf2 self
-\f0\b \cf0 .
-\f1\b0 gridSize
-\f0\b -
-\f1\b0 \cf4 1
-\f0\b \cf0 , 
-\f1\b0 wallColor
-\f0\b , 
-\f1\b0 wallColor
-\f0\b , (
-\f1\b0 \cf4 0
-\f0\b \cf0 ,
-\f1\b0 \cf4 91
-\f0\b \cf0 ), 
-\f1\b0 \cf4 'arc'
-\f0\b \cf0 )\
-            
-\f1\b0 line
-\f0\b (
-\f1\b0 add
-\f0\b (
-\f1\b0 screen
-\f0\b , (
-\f1\b0 \cf2 self
-\f0\b \cf0 .
-\f1\b0 gridSize
-\f0\b *(-
-\f1\b0 \cf4 2
-\f0\b \cf0 )*
-\f1\b0 WALL_RADIUS
-\f0\b +
-\f1\b0 \cf4 1
-\f0\b \cf0 , 
-\f1\b0 \cf2 self
-\f0\b \cf0 .
-\f1\b0 gridSize
-\f0\b *(
-\f1\b0 \cf4 1
-\f0\b \cf0 )*
-\f1\b0 WALL_RADIUS
-\f0\b )), 
-\f1\b0 add
-\f0\b (
-\f1\b0 screen
-\f0\b , (
-\f1\b0 \cf2 self
-\f0\b \cf0 .
-\f1\b0 gridSize
-\f0\b *(-
-\f1\b0 \cf4 0.5
-\f0\b \cf0 ), 
-\f1\b0 \cf2 self
-\f0\b \cf0 .
-\f1\b0 gridSize
-\f0\b *(
-\f1\b0 \cf4 1
-\f0\b \cf0 )*
-\f1\b0 WALL_RADIUS
-\f0\b )), 
-\f1\b0 wallColor
-\f0\b )\
-            
-\f1\b0 line
-\f0\b (
-\f1\b0 add
-\f0\b (
-\f1\b0 screen
-\f0\b , (
-\f1\b0 \cf2 self
-\f0\b \cf0 .
-\f1\b0 gridSize
-\f0\b *(-
-\f1\b0 \cf4 1
-\f0\b \cf0 )*
-\f1\b0 WALL_RADIUS
-\f0\b , 
-\f1\b0 \cf2 self
-\f0\b \cf0 .
-\f1\b0 gridSize
-\f0\b *(
-\f1\b0 \cf4 2
-\f0\b \cf0 )*
-\f1\b0 WALL_RADIUS
-\f0\b -
-\f1\b0 \cf4 1
-\f0\b \cf0 )), 
-\f1\b0 add
-\f0\b (
-\f1\b0 screen
-\f0\b , (
-\f1\b0 \cf2 self
-\f0\b \cf0 .
-\f1\b0 gridSize
-\f0\b *(-
-\f1\b0 \cf4 1
-\f0\b \cf0 )*
-\f1\b0 WALL_RADIUS
-\f0\b , 
-\f1\b0 \cf2 self
-\f0\b \cf0 .
-\f1\b0 gridSize
-\f0\b *(
-\f1\b0 \cf4 0.5
-\f0\b \cf0 ))), 
-\f1\b0 wallColor
-\f0\b )\
-          \
-  \cf2 def 
-\f1\b0 \cf0 isWall
-\f0\b (
-\f1\b0 \cf2 self
-\f0\b \cf0 , 
-\f1\b0 x
-\f0\b , 
-\f1\b0 y
-\f0\b , 
-\f1\b0 walls
-\f0\b ):\
-    \cf2 if 
-\f1\b0 \cf0 x 
-\f0\b < 
-\f1\b0 \cf4 0 
-\f0\b \cf2 or 
-\f1\b0 \cf0 y 
-\f0\b < 
-\f1\b0 \cf4 0
-\f0\b \cf0 :\
-      \cf2 return False\
-    if 
-\f1\b0 \cf0 x 
-\f0\b >= 
-\f1\b0 walls
-\f0\b .
-\f1\b0 width 
-\f0\b \cf2 or 
-\f1\b0 \cf0 y 
-\f0\b >= 
-\f1\b0 walls
-\f0\b .
-\f1\b0 height
-\f0\b :\
-      \cf2 return False\
-    return 
-\f1\b0 \cf0 walls
-\f0\b [
-\f1\b0 x
-\f0\b ][
-\f1\b0 y
-\f0\b ]\
-  \
-  \cf2 def 
-\f1\b0 \cf0 drawFood
-\f0\b (
-\f1\b0 \cf2 self
-\f0\b \cf0 , 
-\f1\b0 foodMatrix 
-\f0\b ):\
-    
-\f1\b0 foodImages 
-\f0\b = []\
-    
-\f1\b0 color 
-\f0\b = 
-\f1\b0 FOOD_COLOR\
-    
-\f0\b \cf2 for 
-\f1\b0 \cf0 xNum
-\f0\b , 
-\f1\b0 x 
-\f0\b \cf2 in 
-\f1\b0 \cf0 enumerate
-\f0\b (
-\f1\b0 foodMatrix
-\f0\b ):\
-      \cf2 if 
-\f1\b0 self
-\f0\b \cf0 .
-\f1\b0 capture 
-\f0\b \cf2 and \cf0 (
-\f1\b0 xNum 
-\f0\b * 
-\f1\b0 \cf4 2
-\f0\b \cf0 ) <= 
-\f1\b0 foodMatrix
-\f0\b .
-\f1\b0 width
-\f0\b : 
-\f1\b0 color 
-\f0\b = 
-\f1\b0 TEAM_COLORS
-\f0\b [
-\f1\b0 \cf4 0
-\f0\b \cf0 ]\
-      \cf2 if 
-\f1\b0 self
-\f0\b \cf0 .
-\f1\b0 capture 
-\f0\b \cf2 and \cf0 (
-\f1\b0 xNum 
-\f0\b * 
-\f1\b0 \cf4 2
-\f0\b \cf0 ) > 
-\f1\b0 foodMatrix
-\f0\b .
-\f1\b0 width
-\f0\b : 
-\f1\b0 color 
-\f0\b = 
-\f1\b0 TEAM_COLORS
-\f0\b [
-\f1\b0 \cf4 1
-\f0\b \cf0 ]\
-      
-\f1\b0 imageRow 
-\f0\b = []\
-      
-\f1\b0 foodImages
-\f0\b .
-\f1\b0 append
-\f0\b (
-\f1\b0 imageRow
-\f0\b )\
-      \cf2 for 
-\f1\b0 \cf0 yNum
-\f0\b , 
-\f1\b0 cell 
-\f0\b \cf2 in 
-\f1\b0 \cf0 enumerate
-\f0\b (
-\f1\b0 x
-\f0\b ):\
-        \cf2 if 
-\f1\b0 \cf0 cell
-\f0\b : 
-\f2\i\b0 \cf3 # There's food here\
-          
-\f1\i0 \cf0 screen 
-\f0\b = 
-\f1\b0 \cf2 self
-\f0\b \cf0 .
-\f1\b0 to_screen
-\f0\b ((
-\f1\b0 xNum
-\f0\b , 
-\f1\b0 yNum 
-\f0\b ))\
-          
-\f1\b0 dot 
-\f0\b = 
-\f1\b0 circle
-\f0\b ( 
-\f1\b0 screen
-\f0\b , \
-                        
-\f1\b0 FOOD_SIZE 
-\f0\b * 
-\f1\b0 \cf2 self
-\f0\b \cf0 .
-\f1\b0 gridSize
-\f0\b , \
-                        
-\f1\b0 outlineColor 
-\f0\b = 
-\f1\b0 color
-\f0\b , 
-\f1\b0 fillColor 
-\f0\b = 
-\f1\b0 color
-\f0\b ,\
-                        
-\f1\b0 width 
-\f0\b = 
-\f1\b0 \cf4 1
-\f0\b \cf0 )\
-          
-\f1\b0 imageRow
-\f0\b .
-\f1\b0 append
-\f0\b (
-\f1\b0 dot
-\f0\b )\
-        \cf2 else\cf0 :\
-          
-\f1\b0 imageRow
-\f0\b .
-\f1\b0 append
-\f0\b (
-\f1\b0 \cf2 None
-\f0\b \cf0 )\
-    \cf2 return 
-\f1\b0 \cf0 foodImages\
-  \
-  
-\f0\b \cf2 def 
-\f1\b0 \cf0 drawCapsules
-\f0\b (
-\f1\b0 \cf2 self
-\f0\b \cf0 , 
-\f1\b0 capsules 
-\f0\b ):\
-    
-\f1\b0 capsuleImages 
-\f0\b = \{\}\
-    \cf2 for 
-\f1\b0 \cf0 capsule 
-\f0\b \cf2 in 
-\f1\b0 \cf0 capsules
-\f0\b :\
-      ( 
-\f1\b0 screen_x
-\f0\b , 
-\f1\b0 screen_y 
-\f0\b ) = 
-\f1\b0 \cf2 self
-\f0\b \cf0 .
-\f1\b0 to_screen
-\f0\b (
-\f1\b0 capsule
-\f0\b )\
-      
-\f1\b0 dot 
-\f0\b = 
-\f1\b0 circle
-\f0\b ( (
-\f1\b0 screen_x
-\f0\b , 
-\f1\b0 screen_y
-\f0\b ), \
-                        
-\f1\b0 CAPSULE_SIZE 
-\f0\b * 
-\f1\b0 \cf2 self
-\f0\b \cf0 .
-\f1\b0 gridSize
-\f0\b , \
-                        
-\f1\b0 outlineColor 
-\f0\b = 
-\f1\b0 CAPSULE_COLOR
-\f0\b , \
-                        
-\f1\b0 fillColor 
-\f0\b = 
-\f1\b0 CAPSULE_COLOR
-\f0\b , \
-                        
-\f1\b0 width 
-\f0\b = 
-\f1\b0 \cf4 1
-\f0\b \cf0 )\
-      
-\f1\b0 capsuleImages
-\f0\b [
-\f1\b0 capsule
-\f0\b ] = 
-\f1\b0 dot\
-    
-\f0\b \cf2 return 
-\f1\b0 \cf0 capsuleImages\
-  \
-  
-\f0\b \cf2 def 
-\f1\b0 \cf0 removeFood
-\f0\b (
-\f1\b0 \cf2 self
-\f0\b \cf0 , 
-\f1\b0 cell
-\f0\b , 
-\f1\b0 foodImages 
-\f0\b ):\
-    
-\f1\b0 x
-\f0\b , 
-\f1\b0 y 
-\f0\b = 
-\f1\b0 cell\
-    remove_from_screen
-\f0\b (
-\f1\b0 foodImages
-\f0\b [
-\f1\b0 x
-\f0\b ][
-\f1\b0 y
-\f0\b ])\
-    \
-  \cf2 def 
-\f1\b0 \cf0 removeCapsule
-\f0\b (
-\f1\b0 \cf2 self
-\f0\b \cf0 , 
-\f1\b0 cell
-\f0\b , 
-\f1\b0 capsuleImages 
-\f0\b ):\
-    
-\f1\b0 x
-\f0\b , 
-\f1\b0 y 
-\f0\b = 
-\f1\b0 cell\
-    remove_from_screen
-\f0\b (
-\f1\b0 capsuleImages
-\f0\b [(
-\f1\b0 x
-\f0\b , 
-\f1\b0 y
-\f0\b )])\
-\
-  \cf2 def 
-\f1\b0 \cf0 drawExpandedCells
-\f0\b (
-\f1\b0 \cf2 self
-\f0\b \cf0 , 
-\f1\b0 cells
-\f0\b ):\
-    
-\f1\b0 \cf5 """\
-    Draws an overlay of expanded grid positions for search agents\
-    """\
-    \cf0 n 
-\f0\b = 
-\f1\b0 float
-\f0\b (
-\f1\b0 len
-\f0\b (
-\f1\b0 cells
-\f0\b ))\
-    
-\f1\b0 baseColor 
-\f0\b = [
-\f1\b0 \cf4 1.0
-\f0\b \cf0 , 
-\f1\b0 \cf4 0.0
-\f0\b \cf0 , 
-\f1\b0 \cf4 0.0
-\f0\b \cf0 ]\
-    
-\f1\b0 \cf2 self
-\f0\b \cf0 .
-\f1\b0 clearExpandedCells
-\f0\b ()\
-    
-\f1\b0 \cf2 self
-\f0\b \cf0 .
-\f1\b0 expandedCells 
-\f0\b = []\
-    \cf2 for 
-\f1\b0 \cf0 k
-\f0\b , 
-\f1\b0 cell 
-\f0\b \cf2 in 
-\f1\b0 \cf0 enumerate
-\f0\b (
-\f1\b0 cells
-\f0\b ):\
-       
-\f1\b0 screenPos 
-\f0\b = 
-\f1\b0 \cf2 self
-\f0\b \cf0 .
-\f1\b0 to_screen
-\f0\b ( 
-\f1\b0 cell
-\f0\b )\
-       
-\f1\b0 cellColor 
-\f0\b = 
-\f1\b0 formatColor
-\f0\b (*[(
-\f1\b0 n
-\f0\b -
-\f1\b0 k
-\f0\b ) * 
-\f1\b0 c 
-\f0\b * .
-\f1\b0 \cf4 5 
-\f0\b \cf0 / 
-\f1\b0 n 
-\f0\b + .
-\f1\b0 \cf4 25 
-\f0\b \cf2 for 
-\f1\b0 \cf0 c 
-\f0\b \cf2 in 
-\f1\b0 \cf0 baseColor
-\f0\b ])\
-       
-\f1\b0 block 
-\f0\b = 
-\f1\b0 square
-\f0\b (
-\f1\b0 screenPos
-\f0\b , \
-                
-\f1\b0 \cf4 0.5 
-\f0\b \cf0 * 
-\f1\b0 \cf2 self
-\f0\b \cf0 .
-\f1\b0 gridSize
-\f0\b , \
-                
-\f1\b0 color 
-\f0\b = 
-\f1\b0 cellColor
-\f0\b , \
-                
-\f1\b0 filled 
-\f0\b = 
-\f1\b0 \cf4 1
-\f0\b \cf0 , 
-\f1\b0 behind
-\f0\b =\cf2 True\cf0 )\
-       
-\f1\b0 \cf2 self
-\f0\b \cf0 .
-\f1\b0 expandedCells
-\f0\b .
-\f1\b0 append
-\f0\b (
-\f1\b0 block
-\f0\b )\
-  \
-  \cf2 def 
-\f1\b0 \cf0 clearExpandedCells
-\f0\b (
-\f1\b0 \cf2 self
-\f0\b \cf0 ):\
-    \cf2 if 
-\f1\b0 \cf4 'expandedCells' 
-\f0\b \cf2 in 
-\f1\b0 \cf0 dir
-\f0\b (
-\f1\b0 \cf2 self
-\f0\b \cf0 ) \cf2 and 
-\f1\b0 \cf0 len
-\f0\b (
-\f1\b0 \cf2 self
-\f0\b \cf0 .
-\f1\b0 expandedCells
-\f0\b ) > 
-\f1\b0 \cf4 0
-\f0\b \cf0 :\
-      \cf2 for 
-\f1\b0 \cf0 cell 
-\f0\b \cf2 in 
-\f1\b0 self
-\f0\b \cf0 .
-\f1\b0 expandedCells
-\f0\b :\
-        
-\f1\b0 remove_from_screen
-\f0\b (
-\f1\b0 cell
-\f0\b )\
-\
-\cf2 class 
-\f1\b0 \cf0 FirstPersonPacmanGraphics
-\f0\b (
-\f1\b0 PacmanGraphics
-\f0\b ):\
-  \cf2 def 
-\f1\b0 \cf0 __init__
-\f0\b (
-\f1\b0 \cf2 self
-\f0\b \cf0 , 
-\f1\b0 zoom 
-\f0\b = 
-\f1\b0 \cf4 1.0
-\f0\b \cf0 , 
-\f1\b0 showGhosts 
-\f0\b = \cf2 True\cf0 , 
-\f1\b0 capture 
-\f0\b = \cf2 False\cf0 ):\
-    
-\f1\b0 PacmanGraphics
-\f0\b .
-\f1\b0 __init__
-\f0\b (
-\f1\b0 \cf2 self
-\f0\b \cf0 , 
-\f1\b0 zoom
-\f0\b )\
-    
-\f1\b0 \cf2 self
-\f0\b \cf0 .
-\f1\b0 showGhosts 
-\f0\b = 
-\f1\b0 showGhosts\
-    \cf2 self
-\f0\b \cf0 .
-\f1\b0 capture 
-\f0\b = 
-\f1\b0 capture\
-    \
-  
-\f0\b \cf2 def 
-\f1\b0 \cf0 initialize
-\f0\b (
-\f1\b0 \cf2 self
-\f0\b \cf0 , 
-\f1\b0 state
-\f0\b , 
-\f1\b0 isBlue 
-\f0\b = \cf2 False\cf0 ):\
-    \
-    
-\f1\b0 \cf2 self
-\f0\b \cf0 .
-\f1\b0 isBlue 
-\f0\b = 
-\f1\b0 isBlue\
-    PacmanGraphics
-\f0\b .
-\f1\b0 startGraphics
-\f0\b (
-\f1\b0 \cf2 self
-\f0\b \cf0 , 
-\f1\b0 state
-\f0\b )\
-    
-\f2\i\b0 \cf3 # Initialize distribution images\
-    
-\f1\i0 \cf0 walls 
-\f0\b = 
-\f1\b0 state
-\f0\b .
-\f1\b0 layout
-\f0\b .
-\f1\b0 walls\
-    dist 
-\f0\b = []\
-    
-\f1\b0 \cf2 self
-\f0\b \cf0 .
-\f1\b0 layout 
-\f0\b = 
-\f1\b0 state
-\f0\b .
-\f1\b0 layout\
-    \
-    
-\f0\b \cf2 for 
-\f1\b0 \cf0 x 
-\f0\b \cf2 in 
-\f1\b0 \cf0 range
-\f0\b (
-\f1\b0 walls
-\f0\b .
-\f1\b0 width
-\f0\b ):\
-      
-\f1\b0 distx 
-\f0\b = []\
-      
-\f1\b0 dist
-\f0\b .
-\f1\b0 append
-\f0\b (
-\f1\b0 distx
-\f0\b )\
-      \cf2 for 
-\f1\b0 \cf0 y 
-\f0\b \cf2 in 
-\f1\b0 \cf0 range
-\f0\b (
-\f1\b0 walls
-\f0\b .
-\f1\b0 height
-\f0\b ):\
-          ( 
-\f1\b0 screen_x
-\f0\b , 
-\f1\b0 screen_y 
-\f0\b ) = 
-\f1\b0 \cf2 self
-\f0\b \cf0 .
-\f1\b0 to_screen
-\f0\b ( (
-\f1\b0 x
-\f0\b , 
-\f1\b0 y
-\f0\b ) )\
-          
-\f1\b0 block 
-\f0\b = 
-\f1\b0 square
-\f0\b ( (
-\f1\b0 screen_x
-\f0\b , 
-\f1\b0 screen_y
-\f0\b ), \
-                          
-\f1\b0 \cf4 0.5 
-\f0\b \cf0 * 
-\f1\b0 \cf2 self
-\f0\b \cf0 .
-\f1\b0 gridSize
-\f0\b , \
-                          
-\f1\b0 color 
-\f0\b = 
-\f1\b0 BACKGROUND_COLOR
-\f0\b , \
-                          
-\f1\b0 filled 
-\f0\b = 
-\f1\b0 \cf4 1
-\f0\b \cf0 )\
-          
-\f1\b0 distx
-\f0\b .
-\f1\b0 append
-\f0\b (
-\f1\b0 block
-\f0\b )\
-    
-\f1\b0 \cf2 self
-\f0\b \cf0 .
-\f1\b0 distributionImages 
-\f0\b = 
-\f1\b0 dist\
-\
-    
-\f2\i \cf3 # Draw the rest\
-    
-\f1\i0 \cf2 self
-\f0\b \cf0 .
-\f1\b0 drawStaticObjects
-\f0\b (
-\f1\b0 state
-\f0\b )\
-    
-\f1\b0 \cf2 self
-\f0\b \cf0 .
-\f1\b0 drawAgentObjects
-\f0\b (
-\f1\b0 state
-\f0\b )\
-    \
-    
-\f2\i\b0 \cf3 # Information\
-    
-\f1\i0 \cf2 self
-\f0\b \cf0 .
-\f1\b0 previousState 
-\f0\b = 
-\f1\b0 state\
-    \
-  
-\f0\b \cf2 def 
-\f1\b0 \cf0 updateDistributions
-\f0\b (
-\f1\b0 \cf2 self
-\f0\b \cf0 , 
-\f1\b0 distributions
-\f0\b ):\
-    \cf2 for 
-\f1\b0 \cf0 x 
-\f0\b \cf2 in 
-\f1\b0 \cf0 range
-\f0\b (
-\f1\b0 len
-\f0\b (
-\f1\b0 \cf2 self
-\f0\b \cf0 .
-\f1\b0 distributionImages
-\f0\b )):\
-      \cf2 for 
-\f1\b0 \cf0 y 
-\f0\b \cf2 in 
-\f1\b0 \cf0 range
-\f0\b (
-\f1\b0 len
-\f0\b (
-\f1\b0 \cf2 self
-\f0\b \cf0 .
-\f1\b0 distributionImages
-\f0\b [
-\f1\b0 \cf4 0
-\f0\b \cf0 ])):\
-        
-\f1\b0 image 
-\f0\b = 
-\f1\b0 \cf2 self
-\f0\b \cf0 .
-\f1\b0 distributionImages
-\f0\b [
-\f1\b0 x
-\f0\b ][
-\f1\b0 y
-\f0\b ]\
-        
-\f1\b0 weights 
-\f0\b = [
-\f1\b0 dist
-\f0\b .
-\f1\b0 getCount
-\f0\b ( (
-\f1\b0 x
-\f0\b ,
-\f1\b0 y
-\f0\b ) ) \cf2 for 
-\f1\b0 \cf0 dist 
-\f0\b \cf2 in 
-\f1\b0 \cf0 distributions
-\f0\b ]\
-        \
-        \cf2 if 
-\f1\b0 \cf0 sum
-\f0\b (
-\f1\b0 weights
-\f0\b ) != 
-\f1\b0 \cf4 0
-\f0\b \cf0 :\
-          \cf2 pass\
-        
-\f2\i\b0 \cf3 # Fog of war\
-        
-\f1\i0 \cf0 color 
-\f0\b = [
-\f1\b0 \cf4 0.0
-\f0\b \cf0 ,
-\f1\b0 \cf4 0.0
-\f0\b \cf0 ,
-\f1\b0 \cf4 0.0
-\f0\b \cf0 ]\
-        \cf2 for 
-\f1\b0 \cf0 weight
-\f0\b , 
-\f1\b0 gcolor 
-\f0\b \cf2 in 
-\f1\b0 \cf0 zip
-\f0\b (
-\f1\b0 weights
-\f0\b , 
-\f1\b0 GHOST_VEC_COLORS
-\f0\b [
-\f1\b0 \cf4 1
-\f0\b \cf0 :]):\
-          
-\f1\b0 color 
-\f0\b = [
-\f1\b0 min
-\f0\b (
-\f1\b0 \cf4 1.0
-\f0\b \cf0 , 
-\f1\b0 c 
-\f0\b + 
-\f1\b0 \cf4 0.95 
-\f0\b \cf0 * 
-\f1\b0 g 
-\f0\b * 
-\f1\b0 weight 
-\f0\b ** .
-\f1\b0 \cf4 3
-\f0\b \cf0 ) \cf2 for 
-\f1\b0 \cf0 c
-\f0\b ,
-\f1\b0 g 
-\f0\b \cf2 in 
-\f1\b0 \cf0 zip
-\f0\b (
-\f1\b0 color
-\f0\b , 
-\f1\b0 gcolor
-\f0\b )]\
-        
-\f1\b0 changeColor
-\f0\b (
-\f1\b0 image
-\f0\b , 
-\f1\b0 formatColor
-\f0\b (*
-\f1\b0 color
-\f0\b ))\
-    
-\f1\b0 refresh\
-  \
-  
-\f0\b \cf2 def 
-\f1\b0 \cf0 lookAhead
-\f0\b (
-\f1\b0 \cf2 self
-\f0\b \cf0 , 
-\f1\b0 config
-\f0\b , 
-\f1\b0 state
-\f0\b ):\
-    \cf2 if 
-\f1\b0 \cf0 config
-\f0\b .
-\f1\b0 getDirection
-\f0\b () == 
-\f1\b0 \cf4 'Stop'
-\f0\b \cf0 :\
-      \cf2 return\
-    else\cf0 :\
-      \cf2 pass\
-      
-\f2\i\b0 \cf3 # Draw relevant ghosts\
-      
-\f1\i0 \cf0 allGhosts 
-\f0\b = 
-\f1\b0 state
-\f0\b .
-\f1\b0 getGhostStates
-\f0\b ()\
-      
-\f1\b0 visibleGhosts 
-\f0\b = 
-\f1\b0 state
-\f0\b .
-\f1\b0 getVisibleGhosts
-\f0\b ()\
-      \cf2 for 
-\f1\b0 \cf0 i
-\f0\b , 
-\f1\b0 ghost 
-\f0\b \cf2 in 
-\f1\b0 \cf0 enumerate
-\f0\b (
-\f1\b0 allGhosts
-\f0\b ):\
-        \cf2 if 
-\f1\b0 \cf0 ghost 
-\f0\b \cf2 in 
-\f1\b0 \cf0 visibleGhosts
-\f0\b :\
-          
-\f1\b0 \cf2 self
-\f0\b \cf0 .
-\f1\b0 drawGhost
-\f0\b (
-\f1\b0 ghost
-\f0\b , 
-\f1\b0 i
-\f0\b )\
-        \cf2 else\cf0 :\
-          
-\f1\b0 \cf2 self
-\f0\b \cf0 .
-\f1\b0 currentGhostImages
-\f0\b [
-\f1\b0 i
-\f0\b ] = 
-\f1\b0 \cf2 None\
-    \
-  
-\f0\b def 
-\f1\b0 \cf0 getGhostColor
-\f0\b (
-\f1\b0 \cf2 self
-\f0\b \cf0 , 
-\f1\b0 ghost
-\f0\b , 
-\f1\b0 ghostIndex
-\f0\b ):\
-    \cf2 return 
-\f1\b0 \cf0 GHOST_COLORS
-\f0\b [
-\f1\b0 ghostIndex
-\f0\b ]\
-  \
-  \cf2 def 
-\f1\b0 \cf0 getPosition
-\f0\b (
-\f1\b0 \cf2 self
-\f0\b \cf0 , 
-\f1\b0 ghostState
-\f0\b ):\
-    \cf2 if not 
-\f1\b0 self
-\f0\b \cf0 .
-\f1\b0 showGhosts 
-\f0\b \cf2 and not 
-\f1\b0 \cf0 ghostState
-\f0\b .
-\f1\b0 isPacman 
-\f0\b \cf2 and 
-\f1\b0 \cf0 ghostState
-\f0\b .
-\f1\b0 getPosition
-\f0\b ()[
-\f1\b0 \cf4 1
-\f0\b \cf0 ] > 
-\f1\b0 \cf4 1
-\f0\b \cf0 :\
-      \cf2 return \cf0 (-
-\f1\b0 \cf4 1000
-\f0\b \cf0 , -
-\f1\b0 \cf4 1000
-\f0\b \cf0 )\
-    \cf2 else\cf0 :\
-      \cf2 return 
-\f1\b0 \cf0 PacmanGraphics
-\f0\b .
-\f1\b0 getPosition
-\f0\b (
-\f1\b0 \cf2 self
-\f0\b \cf0 , 
-\f1\b0 ghostState
-\f0\b )\
-    \
-\cf2 def 
-\f1\b0 \cf0 add
-\f0\b (
-\f1\b0 x
-\f0\b , 
-\f1\b0 y
-\f0\b ):\
-  \cf2 return \cf0 (
-\f1\b0 x
-\f0\b [
-\f1\b0 \cf4 0
-\f0\b \cf0 ] + 
-\f1\b0 y
-\f0\b [
-\f1\b0 \cf4 0
-\f0\b \cf0 ], 
-\f1\b0 x
-\f0\b [
-\f1\b0 \cf4 1
-\f0\b \cf0 ] + 
-\f1\b0 y
-\f0\b [
-\f1\b0 \cf4 1
-\f0\b \cf0 ])}
+    # Information
+    self.previousState = state
+
+  def startGraphics(self, state):
+    self.layout = state.layout
+    layout = self.layout
+    self.width = layout.width
+    self.height = layout.height
+    self.make_window(self.width, self.height)
+    self.infoPane = InfoPane(layout, self.gridSize)
+    self.currentState = layout
+
+  def drawDistributions(self, state):
+    walls = state.layout.walls
+    dist = []
+    for x in range(walls.width):
+      distx = []
+      dist.append(distx)
+      for y in range(walls.height):
+          ( screen_x, screen_y ) = self.to_screen( (x, y) )
+          block = square( (screen_x, screen_y),
+                          0.5 * self.gridSize,
+                          color = BACKGROUND_COLOR,
+                          filled = 1, behind=2)
+          distx.append(block)
+    self.distributionImages = dist
+
+  def drawStaticObjects(self, state):
+    layout = self.layout
+    self.drawWalls(layout.walls)
+    self.food = self.drawFood(layout.food)
+    self.capsules = self.drawCapsules(layout.capsules)
+    refresh()
+
+  def drawAgentObjects(self, state):
+    self.agentImages = [] # (agentState, image)
+    for index, agent in enumerate(state.agentStates):
+      if agent.isPacman:
+        image = self.drawPacman(agent, index)
+        self.agentImages.append( (agent, image) )
+      else:
+        image = self.drawGhost(agent, index)
+        self.agentImages.append( (agent, image) )
+    refresh()
+
+  def swapImages(self, agentIndex, newState):
+    """
+      Changes an image from a ghost to a pacman or vis versa (for capture)
+    """
+    prevState, prevImage = self.agentImages[agentIndex]
+    for item in prevImage: remove_from_screen(item)
+    if newState.isPacman:
+      image = self.drawPacman(newState, agentIndex)
+      self.agentImages[agentIndex] = (newState, image )
+    else:
+      image = self.drawGhost(newState, agentIndex)
+      self.agentImages[agentIndex] = (newState, image )
+    refresh()
+
+  def update(self, newState):
+    agentIndex = newState._agentMoved
+    agentState = newState.agentStates[agentIndex]
+
+    if self.agentImages[agentIndex][0].isPacman != agentState.isPacman: self.swapImages(agentIndex, agentState)
+    prevState, prevImage = self.agentImages[agentIndex]
+    if agentState.isPacman:
+      self.animatePacman(agentState, prevState, prevImage)
+    else:
+      self.moveGhost(agentState, agentIndex, prevState, prevImage)
+    self.agentImages[agentIndex] = (agentState, prevImage)
+
+    if newState._foodEaten != None:
+      self.removeFood(newState._foodEaten, self.food)
+    if newState._capsuleEaten != None:
+      self.removeCapsule(newState._capsuleEaten, self.capsules)
+    self.infoPane.updateScore(newState.score)
+    if 'ghostDistances' in dir(newState):
+      self.infoPane.updateGhostDistances(newState.ghostDistances)
+
+  def make_window(self, width, height):
+    grid_width = (width-1) * self.gridSize
+    grid_height = (height-1) * self.gridSize
+    screen_width = 2*self.gridSize + grid_width
+    screen_height = 2*self.gridSize + grid_height + INFO_PANE_HEIGHT
+
+    begin_graphics(screen_width,
+                   screen_height,
+                   BACKGROUND_COLOR,
+                   "CS188 Pacman")
+
+  def drawPacman(self, pacman, index):
+    position = self.getPosition(pacman)
+    screen_point = self.to_screen(position)
+    endpoints = self.getEndpoints(self.getDirection(pacman))
+
+    width = PACMAN_OUTLINE_WIDTH
+    outlineColor = PACMAN_COLOR
+    fillColor = PACMAN_COLOR
+
+    if self.capture:
+      outlineColor = TEAM_COLORS[index % 2]
+      fillColor = GHOST_COLORS[index]
+      width = PACMAN_CAPTURE_OUTLINE_WIDTH
+
+    return [circle(screen_point, PACMAN_SCALE * self.gridSize,
+                   fillColor = fillColor, outlineColor = outlineColor,
+                   endpoints = endpoints,
+                   width = width)]
+
+  def getEndpoints(self, direction, position=(0,0)):
+    x, y = position
+    pos = x - int(x) + y - int(y)
+    width = 30 + 80 * math.sin(math.pi* pos)
+
+    delta = width / 2
+    if (direction == 'West'):
+      endpoints = (180+delta, 180-delta)
+    elif (direction == 'North'):
+      endpoints = (90+delta, 90-delta)
+    elif (direction == 'South'):
+      endpoints = (270+delta, 270-delta)
+    else:
+      endpoints = (0+delta, 0-delta)
+    return endpoints
+
+  def movePacman(self, position, direction, image):
+    screenPosition = self.to_screen(position)
+    endpoints = self.getEndpoints( direction, position )
+    r = PACMAN_SCALE * self.gridSize
+    moveCircle(image[0], screenPosition, r, endpoints)
+    refresh()
+
+  def animatePacman(self, pacman, prevPacman, image):
+    if self.frameTime < 0:
+      print 'Press any key to step forward, "q" to play'
+      keys = wait_for_keys()
+      if 'q' in keys:
+        self.frameTime = 0.1
+    if self.frameTime > 0.01 or self.frameTime < 0:
+      start = time.time()
+      fx, fy = self.getPosition(prevPacman)
+      px, py = self.getPosition(pacman)
+      frames = 4.0
+      for i in range(1,int(frames) + 1):
+        pos = px*i/frames + fx*(frames-i)/frames, py*i/frames + fy*(frames-i)/frames
+        self.movePacman(pos, self.getDirection(pacman), image)
+        refresh()
+        sleep(abs(self.frameTime) / frames)
+    else:
+      self.movePacman(self.getPosition(pacman), self.getDirection(pacman), image)
+    refresh()
+
+  def getGhostColor(self, ghost, ghostIndex):
+    if ghost.scaredTimer > 0:
+      return SCARED_COLOR
+    else:
+      return GHOST_COLORS[ghostIndex]
+
+  def drawGhost(self, ghost, agentIndex):
+    pos = self.getPosition(ghost)
+    dir = self.getDirection(ghost)
+    (screen_x, screen_y) = (self.to_screen(pos) )
+    coords = []
+    for (x, y) in GHOST_SHAPE:
+      coords.append((x*self.gridSize*GHOST_SIZE + screen_x, y*self.gridSize*GHOST_SIZE + screen_y))
+
+    colour = self.getGhostColor(ghost, agentIndex)
+    body = polygon(coords, colour, filled = 1)
+    WHITE = formatColor(1.0, 1.0, 1.0)
+    BLACK = formatColor(0.0, 0.0, 0.0)
+
+    dx = 0
+    dy = 0
+    if dir == 'North':
+      dy = -0.2
+    if dir == 'South':
+      dy = 0.2
+    if dir == 'East':
+      dx = 0.2
+    if dir == 'West':
+      dx = -0.2
+    leftEye = circle((screen_x+self.gridSize*GHOST_SIZE*(-0.3+dx/1.5), screen_y-self.gridSize*GHOST_SIZE*(0.3-dy/1.5)), self.gridSize*GHOST_SIZE*0.2, WHITE, WHITE)
+    rightEye = circle((screen_x+self.gridSize*GHOST_SIZE*(0.3+dx/1.5), screen_y-self.gridSize*GHOST_SIZE*(0.3-dy/1.5)), self.gridSize*GHOST_SIZE*0.2, WHITE, WHITE)
+    leftPupil = circle((screen_x+self.gridSize*GHOST_SIZE*(-0.3+dx), screen_y-self.gridSize*GHOST_SIZE*(0.3-dy)), self.gridSize*GHOST_SIZE*0.08, BLACK, BLACK)
+    rightPupil = circle((screen_x+self.gridSize*GHOST_SIZE*(0.3+dx), screen_y-self.gridSize*GHOST_SIZE*(0.3-dy)), self.gridSize*GHOST_SIZE*0.08, BLACK, BLACK)
+    ghostImageParts = []
+    ghostImageParts.append(body)
+    ghostImageParts.append(leftEye)
+    ghostImageParts.append(rightEye)
+    ghostImageParts.append(leftPupil)
+    ghostImageParts.append(rightPupil)
+
+    return ghostImageParts
+
+  def moveEyes(self, pos, dir, eyes):
+    (screen_x, screen_y) = (self.to_screen(pos) )
+    dx = 0
+    dy = 0
+    if dir == 'North':
+      dy = -0.2
+    if dir == 'South':
+      dy = 0.2
+    if dir == 'East':
+      dx = 0.2
+    if dir == 'West':
+      dx = -0.2
+    moveCircle(eyes[0],(screen_x+self.gridSize*GHOST_SIZE*(-0.3+dx/1.5), screen_y-self.gridSize*GHOST_SIZE*(0.3-dy/1.5)), self.gridSize*GHOST_SIZE*0.2)
+    moveCircle(eyes[1],(screen_x+self.gridSize*GHOST_SIZE*(0.3+dx/1.5), screen_y-self.gridSize*GHOST_SIZE*(0.3-dy/1.5)), self.gridSize*GHOST_SIZE*0.2)
+    moveCircle(eyes[2],(screen_x+self.gridSize*GHOST_SIZE*(-0.3+dx), screen_y-self.gridSize*GHOST_SIZE*(0.3-dy)), self.gridSize*GHOST_SIZE*0.08)
+    moveCircle(eyes[3],(screen_x+self.gridSize*GHOST_SIZE*(0.3+dx), screen_y-self.gridSize*GHOST_SIZE*(0.3-dy)), self.gridSize*GHOST_SIZE*0.08)
+
+  def moveGhost(self, ghost, ghostIndex, prevGhost, ghostImageParts):
+    old_x, old_y = self.to_screen(self.getPosition(prevGhost))
+    new_x, new_y = self.to_screen(self.getPosition(ghost))
+    delta = new_x - old_x, new_y - old_y
+
+    for ghostImagePart in ghostImageParts:
+      move_by(ghostImagePart, delta)
+    refresh()
+
+    if ghost.scaredTimer > 0:
+      color = SCARED_COLOR
+    else:
+      color = GHOST_COLORS[ghostIndex]
+    edit(ghostImageParts[0], ('fill', color), ('outline', color))
+    self.moveEyes(self.getPosition(ghost), self.getDirection(ghost), ghostImageParts[-4:])
+    refresh()
+
+  def getPosition(self, agentState):
+    if agentState.configuration == None: return (-1000, -1000)
+    return agentState.getPosition()
+
+  def getDirection(self, agentState):
+    if agentState.configuration == None: return Directions.STOP
+    return agentState.configuration.getDirection()
+
+  def finish(self):
+    end_graphics()
+
+  def to_screen(self, point):
+    ( x, y ) = point
+    #y = self.height - y
+    x = (x + 1)*self.gridSize
+    y = (self.height  - y)*self.gridSize
+    return ( x, y )
+
+  # Fixes some TK issue with off-center circles
+  def to_screen2(self, point):
+    ( x, y ) = point
+    #y = self.height - y
+    x = (x + 1)*self.gridSize
+    y = (self.height  - y)*self.gridSize
+    return ( x, y )
+
+  def drawWalls(self, wallMatrix):
+    wallColor = WALL_COLOR
+    for xNum, x in enumerate(wallMatrix):
+      if self.capture and (xNum * 2) < wallMatrix.width: wallColor = TEAM_COLORS[0]
+      if self.capture and (xNum * 2) >= wallMatrix.width: wallColor = TEAM_COLORS[1]
+
+      for yNum, cell in enumerate(x):
+        if cell: # There's a wall here
+          pos = (xNum, yNum)
+          screen = self.to_screen(pos)
+          screen2 = self.to_screen2(pos)
+
+          # draw each quadrant of the square based on adjacent walls
+          wIsWall = self.isWall(xNum-1, yNum, wallMatrix)
+          eIsWall = self.isWall(xNum+1, yNum, wallMatrix)
+          nIsWall = self.isWall(xNum, yNum+1, wallMatrix)
+          sIsWall = self.isWall(xNum, yNum-1, wallMatrix)
+          nwIsWall = self.isWall(xNum-1, yNum+1, wallMatrix)
+          swIsWall = self.isWall(xNum-1, yNum-1, wallMatrix)
+          neIsWall = self.isWall(xNum+1, yNum+1, wallMatrix)
+          seIsWall = self.isWall(xNum+1, yNum-1, wallMatrix)
+
+          # NE quadrant
+          if (not nIsWall) and (not eIsWall):
+            # inner circle
+            circle(screen2, WALL_RADIUS * self.gridSize, wallColor, wallColor, (0,91), 'arc')
+          if (nIsWall) and (not eIsWall):
+            # vertical line
+            line(add(screen, (self.gridSize*WALL_RADIUS, 0)), add(screen, (self.gridSize*WALL_RADIUS, self.gridSize*(-0.5)-1)), wallColor)
+          if (not nIsWall) and (eIsWall):
+            # horizontal line
+            line(add(screen, (0, self.gridSize*(-1)*WALL_RADIUS)), add(screen, (self.gridSize*0.5+1, self.gridSize*(-1)*WALL_RADIUS)), wallColor)
+          if (nIsWall) and (eIsWall) and (not neIsWall):
+            # outer circle
+            circle(add(screen2, (self.gridSize*2*WALL_RADIUS, self.gridSize*(-2)*WALL_RADIUS)), WALL_RADIUS * self.gridSize-1, wallColor, wallColor, (180,271), 'arc')
+            line(add(screen, (self.gridSize*2*WALL_RADIUS-1, self.gridSize*(-1)*WALL_RADIUS)), add(screen, (self.gridSize*0.5+1, self.gridSize*(-1)*WALL_RADIUS)), wallColor)
+            line(add(screen, (self.gridSize*WALL_RADIUS, self.gridSize*(-2)*WALL_RADIUS+1)), add(screen, (self.gridSize*WALL_RADIUS, self.gridSize*(-0.5))), wallColor)
+
+          # NW quadrant
+          if (not nIsWall) and (not wIsWall):
+            # inner circle
+            circle(screen2, WALL_RADIUS * self.gridSize, wallColor, wallColor, (90,181), 'arc')
+          if (nIsWall) and (not wIsWall):
+            # vertical line
+            line(add(screen, (self.gridSize*(-1)*WALL_RADIUS, 0)), add(screen, (self.gridSize*(-1)*WALL_RADIUS, self.gridSize*(-0.5)-1)), wallColor)
+          if (not nIsWall) and (wIsWall):
+            # horizontal line
+            line(add(screen, (0, self.gridSize*(-1)*WALL_RADIUS)), add(screen, (self.gridSize*(-0.5)-1, self.gridSize*(-1)*WALL_RADIUS)), wallColor)
+          if (nIsWall) and (wIsWall) and (not nwIsWall):
+            # outer circle
+            circle(add(screen2, (self.gridSize*(-2)*WALL_RADIUS, self.gridSize*(-2)*WALL_RADIUS)), WALL_RADIUS * self.gridSize-1, wallColor, wallColor, (270,361), 'arc')
+            line(add(screen, (self.gridSize*(-2)*WALL_RADIUS+1, self.gridSize*(-1)*WALL_RADIUS)), add(screen, (self.gridSize*(-0.5), self.gridSize*(-1)*WALL_RADIUS)), wallColor)
+            line(add(screen, (self.gridSize*(-1)*WALL_RADIUS, self.gridSize*(-2)*WALL_RADIUS+1)), add(screen, (self.gridSize*(-1)*WALL_RADIUS, self.gridSize*(-0.5))), wallColor)
+
+          # SE quadrant
+          if (not sIsWall) and (not eIsWall):
+            # inner circle
+            circle(screen2, WALL_RADIUS * self.gridSize, wallColor, wallColor, (270,361), 'arc')
+          if (sIsWall) and (not eIsWall):
+            # vertical line
+            line(add(screen, (self.gridSize*WALL_RADIUS, 0)), add(screen, (self.gridSize*WALL_RADIUS, self.gridSize*(0.5)+1)), wallColor)
+          if (not sIsWall) and (eIsWall):
+            # horizontal line
+            line(add(screen, (0, self.gridSize*(1)*WALL_RADIUS)), add(screen, (self.gridSize*0.5+1, self.gridSize*(1)*WALL_RADIUS)), wallColor)
+          if (sIsWall) and (eIsWall) and (not seIsWall):
+            # outer circle
+            circle(add(screen2, (self.gridSize*2*WALL_RADIUS, self.gridSize*(2)*WALL_RADIUS)), WALL_RADIUS * self.gridSize-1, wallColor, wallColor, (90,181), 'arc')
+            line(add(screen, (self.gridSize*2*WALL_RADIUS-1, self.gridSize*(1)*WALL_RADIUS)), add(screen, (self.gridSize*0.5, self.gridSize*(1)*WALL_RADIUS)), wallColor)
+            line(add(screen, (self.gridSize*WALL_RADIUS, self.gridSize*(2)*WALL_RADIUS-1)), add(screen, (self.gridSize*WALL_RADIUS, self.gridSize*(0.5))), wallColor)
+
+          # SW quadrant
+          if (not sIsWall) and (not wIsWall):
+            # inner circle
+            circle(screen2, WALL_RADIUS * self.gridSize, wallColor, wallColor, (180,271), 'arc')
+          if (sIsWall) and (not wIsWall):
+            # vertical line
+            line(add(screen, (self.gridSize*(-1)*WALL_RADIUS, 0)), add(screen, (self.gridSize*(-1)*WALL_RADIUS, self.gridSize*(0.5)+1)), wallColor)
+          if (not sIsWall) and (wIsWall):
+            # horizontal line
+            line(add(screen, (0, self.gridSize*(1)*WALL_RADIUS)), add(screen, (self.gridSize*(-0.5)-1, self.gridSize*(1)*WALL_RADIUS)), wallColor)
+          if (sIsWall) and (wIsWall) and (not swIsWall):
+            # outer circle
+            circle(add(screen2, (self.gridSize*(-2)*WALL_RADIUS, self.gridSize*(2)*WALL_RADIUS)), WALL_RADIUS * self.gridSize-1, wallColor, wallColor, (0,91), 'arc')
+            line(add(screen, (self.gridSize*(-2)*WALL_RADIUS+1, self.gridSize*(1)*WALL_RADIUS)), add(screen, (self.gridSize*(-0.5), self.gridSize*(1)*WALL_RADIUS)), wallColor)
+            line(add(screen, (self.gridSize*(-1)*WALL_RADIUS, self.gridSize*(2)*WALL_RADIUS-1)), add(screen, (self.gridSize*(-1)*WALL_RADIUS, self.gridSize*(0.5))), wallColor)
+
+  def isWall(self, x, y, walls):
+    if x < 0 or y < 0:
+      return False
+    if x >= walls.width or y >= walls.height:
+      return False
+    return walls[x][y]
+
+  def drawFood(self, foodMatrix ):
+    foodImages = []
+    color = FOOD_COLOR
+    for xNum, x in enumerate(foodMatrix):
+      if self.capture and (xNum * 2) <= foodMatrix.width: color = TEAM_COLORS[0]
+      if self.capture and (xNum * 2) > foodMatrix.width: color = TEAM_COLORS[1]
+      imageRow = []
+      foodImages.append(imageRow)
+      for yNum, cell in enumerate(x):
+        if cell: # There's food here
+          screen = self.to_screen((xNum, yNum ))
+          dot = circle( screen,
+                        FOOD_SIZE * self.gridSize,
+                        outlineColor = color, fillColor = color,
+                        width = 1)
+          imageRow.append(dot)
+        else:
+          imageRow.append(None)
+    return foodImages
+
+  def drawCapsules(self, capsules ):
+    capsuleImages = {}
+    for capsule in capsules:
+      ( screen_x, screen_y ) = self.to_screen(capsule)
+      dot = circle( (screen_x, screen_y),
+                        CAPSULE_SIZE * self.gridSize,
+                        outlineColor = CAPSULE_COLOR,
+                        fillColor = CAPSULE_COLOR,
+                        width = 1)
+      capsuleImages[capsule] = dot
+    return capsuleImages
+
+  def removeFood(self, cell, foodImages ):
+    x, y = cell
+    remove_from_screen(foodImages[x][y])
+
+  def removeCapsule(self, cell, capsuleImages ):
+    x, y = cell
+    remove_from_screen(capsuleImages[(x, y)])
+
+  def drawExpandedCells(self, cells):
+    """
+    Draws an overlay of expanded grid positions for search agents
+    """
+    n = float(len(cells))
+    baseColor = [1.0, 0.0, 0.0]
+    self.clearExpandedCells()
+    self.expandedCells = []
+    for k, cell in enumerate(cells):
+       screenPos = self.to_screen( cell)
+       cellColor = formatColor(*[(n-k) * c * .5 / n + .25 for c in baseColor])
+       block = square(screenPos,
+                0.5 * self.gridSize,
+                color = cellColor,
+                filled = 1, behind=2)
+       self.expandedCells.append(block)
+       if self.frameTime < 0:
+         refresh()
+
+  def clearExpandedCells(self):
+    if 'expandedCells' in dir(self) and len(self.expandedCells) > 0:
+      for cell in self.expandedCells:
+        remove_from_screen(cell)
+
+
+  def updateDistributions(self, distributions):
+    "Draws an agent's belief distributions"
+    if self.distributionImages == None:
+      self.drawDistributions(self.previousState)
+    for x in range(len(self.distributionImages)):
+      for y in range(len(self.distributionImages[0])):
+        image = self.distributionImages[x][y]
+        weights = [dist[ (x,y) ] for dist in distributions]
+
+        if sum(weights) != 0:
+          pass
+        # Fog of war
+        color = [0.0,0.0,0.0]
+        colors = GHOST_VEC_COLORS[1:] # With Pacman
+        if self.capture: colors = GHOST_VEC_COLORS
+        for weight, gcolor in zip(weights, colors):
+          color = [min(1.0, c + 0.95 * g * weight ** .3) for c,g in zip(color, gcolor)]
+        changeColor(image, formatColor(*color))
+    refresh()
+
+class FirstPersonPacmanGraphics(PacmanGraphics):
+  def __init__(self, zoom = 1.0, showGhosts = True, capture = False, frameTime=0):
+    PacmanGraphics.__init__(self, zoom, frameTime=frameTime)
+    self.showGhosts = showGhosts
+    self.capture = capture
+
+  def initialize(self, state, isBlue = False):
+
+    self.isBlue = isBlue
+    PacmanGraphics.startGraphics(self, state)
+    # Initialize distribution images
+    walls = state.layout.walls
+    dist = []
+    self.layout = state.layout
+
+    # Draw the rest
+    self.distributionImages = None  # initialize lazily
+    self.drawStaticObjects(state)
+    self.drawAgentObjects(state)
+
+    # Information
+    self.previousState = state
+
+  def lookAhead(self, config, state):
+    if config.getDirection() == 'Stop':
+      return
+    else:
+      pass
+      # Draw relevant ghosts
+      allGhosts = state.getGhostStates()
+      visibleGhosts = state.getVisibleGhosts()
+      for i, ghost in enumerate(allGhosts):
+        if ghost in visibleGhosts:
+          self.drawGhost(ghost, i)
+        else:
+          self.currentGhostImages[i] = None
+
+  def getGhostColor(self, ghost, ghostIndex):
+    return GHOST_COLORS[ghostIndex]
+
+  def getPosition(self, ghostState):
+    if not self.showGhosts and not ghostState.isPacman and ghostState.getPosition()[1] > 1:
+      return (-1000, -1000)
+    else:
+      return PacmanGraphics.getPosition(self, ghostState)
+
+def add(x, y):
+  return (x[0] + y[0], x[1] + y[1])
+
+
+# Saving graphical output
+# -----------------------
+# Note: to make an animated gif from this postscript output, try the command:
+# convert -delay 7 -loop 1 -compress lzw -layers optimize frame* out.gif
+# convert is part of imagemagick (freeware)
+
+SAVE_POSTSCRIPT = False
+POSTSCRIPT_OUTPUT_DIR = 'frames'
+FRAME_NUMBER = 0
+import os
+
+def saveFrame():
+  "Saves the current graphical output as a postscript file"
+  global SAVE_POSTSCRIPT, FRAME_NUMBER, POSTSCRIPT_OUTPUT_DIR
+  if not SAVE_POSTSCRIPT: return
+  if not os.path.exists(POSTSCRIPT_OUTPUT_DIR): os.mkdir(POSTSCRIPT_OUTPUT_DIR)
+  name = os.path.join(POSTSCRIPT_OUTPUT_DIR, 'frame_%08d.ps' % FRAME_NUMBER)
+  FRAME_NUMBER += 1
+  writePostscript(name) # writes the current canvas

@@ -1,433 +1,80 @@
-{\rtf1\ansi\ansicpg1252\cocoartf1404\cocoasubrtf110
-{\fonttbl\f0\fmodern\fcharset0 Courier-Bold;\f1\fmodern\fcharset0 Courier;\f2\fmodern\fcharset0 Courier-Oblique;
-}
-{\colortbl;\red255\green255\blue255;\red0\green0\blue255;\red118\green0\blue2;\red15\green112\blue1;
-\red251\green0\blue7;}
-\paperw11900\paperh16840\margl1440\margr1440\vieww10800\viewh8400\viewkind0
-\deftab720
-\pard\pardeftab720\partightenfactor0
+# keyboardAgents.py
+# -----------------
+# Licensing Information: Please do not distribute or publish solutions to this
+# project. You are free to use and extend these projects for educational
+# purposes. The Pacman AI projects were developed at UC Berkeley, primarily by
+# John DeNero (denero@cs.berkeley.edu) and Dan Klein (klein@cs.berkeley.edu).
+# For more info, see http://inst.eecs.berkeley.edu/~cs188/sp09/pacman.html
 
-\f0\b\fs26 \cf2 \expnd0\expndtw0\kerning0
-from 
-\f1\b0 \cf0 game 
-\f0\b \cf2 import 
-\f1\b0 \cf0 Agent\
+from game import Agent
+from game import Directions
+import random
 
-\f0\b \cf2 from 
-\f1\b0 \cf0 game 
-\f0\b \cf2 import 
-\f1\b0 \cf0 Directions\
+class KeyboardAgent(Agent):
+  """
+  An agent controlled by the keyboard.
+  """
+  # NOTE: Arrow keys also work.
+  WEST_KEY  = 'a' 
+  EAST_KEY  = 'd' 
+  NORTH_KEY = 'w' 
+  SOUTH_KEY = 's'
+  STOP_KEY = 'q'
 
-\f0\b \cf2 import 
-\f1\b0 \cf0 random\
-\
-
-\f0\b \cf2 class 
-\f1\b0 \cf0 KeyboardAgent
-\f0\b (
-\f1\b0 Agent
-\f0\b ):\
-  
-\f1\b0 \cf3 """\
-  An agent controlled by the keyboard.\
-  """\
-  
-\f2\i \cf4 # NOTE: Arrow keys also work.\
-  
-\f1\i0 \cf0 WEST_KEY  
-\f0\b = 
-\f1\b0 \cf5 'a' \
-  \cf0 EAST_KEY  
-\f0\b = 
-\f1\b0 \cf5 'd' \
-  \cf0 NORTH_KEY 
-\f0\b = 
-\f1\b0 \cf5 'w' \
-  \cf0 SOUTH_KEY 
-\f0\b = 
-\f1\b0 \cf5 's'\
-\
-  
-\f0\b \cf2 def 
-\f1\b0 \cf0 __init__
-\f0\b ( 
-\f1\b0 \cf2 self
-\f0\b \cf0 , 
-\f1\b0 index 
-\f0\b = 
-\f1\b0 \cf5 0 
-\f0\b \cf0 ):\
-    \
+  def __init__( self, index = 0 ):
     
-\f1\b0 \cf2 self
-\f0\b \cf0 .
-\f1\b0 lastMove 
-\f0\b = 
-\f1\b0 Directions
-\f0\b .
-\f1\b0 STOP\
-    \cf2 self
-\f0\b \cf0 .
-\f1\b0 index 
-\f0\b = 
-\f1\b0 index\
-    \cf2 self
-\f0\b \cf0 .
-\f1\b0 keys 
-\f0\b = []\
-    \
-  \cf2 def 
-\f1\b0 \cf0 getAction
-\f0\b ( 
-\f1\b0 \cf2 self
-\f0\b \cf0 , 
-\f1\b0 state
-\f0\b ):\
-    \cf2 from 
-\f1\b0 \cf0 graphicsUtils 
-\f0\b \cf2 import 
-\f1\b0 \cf0 keys_waiting\
+    self.lastMove = Directions.STOP
+    self.index = index
+    self.keys = []
     
-\f0\b \cf2 from 
-\f1\b0 \cf0 graphicsUtils 
-\f0\b \cf2 import 
-\f1\b0 \cf0 keys_pressed\
-    keys 
-\f0\b = 
-\f1\b0 keys_waiting
-\f0\b () + 
-\f1\b0 keys_pressed
-\f0\b ()\
-    \cf2 if 
-\f1\b0 \cf0 keys 
-\f0\b != []:\
+  def getAction( self, state):
+    from graphicsUtils import keys_waiting
+    from graphicsUtils import keys_pressed
+    keys = keys_waiting() + keys_pressed()
+    if keys != []:
+      self.keys = keys
+    
+    legal = state.getLegalActions(self.index)
+    move = self.getMove(legal)
+    
+    if move == Directions.STOP:
+      # Try to move in the same direction as before
+      if self.lastMove in legal:
+        move = self.lastMove
+    
+    if (self.STOP_KEY in self.keys) and Directions.STOP in legal: move = Directions.STOP
+
+    if move not in legal:
+      move = random.choice(legal)
       
-\f1\b0 \cf2 self
-\f0\b \cf0 .
-\f1\b0 keys 
-\f0\b = 
-\f1\b0 keys\
-    \
-    legal 
-\f0\b = 
-\f1\b0 state
-\f0\b .
-\f1\b0 getLegalActions
-\f0\b (
-\f1\b0 \cf2 self
-\f0\b \cf0 .
-\f1\b0 index
-\f0\b )\
-    
-\f1\b0 move 
-\f0\b = 
-\f1\b0 \cf2 self
-\f0\b \cf0 .
-\f1\b0 getMove
-\f0\b (
-\f1\b0 legal
-\f0\b )\
-    \
-    \cf2 if 
-\f1\b0 \cf0 move 
-\f0\b == 
-\f1\b0 Directions
-\f0\b .
-\f1\b0 STOP
-\f0\b :\
-      
-\f2\i\b0 \cf4 # Try to move in the same direction as before\
-      
-\f0\i0\b \cf2 if 
-\f1\b0 self
-\f0\b \cf0 .
-\f1\b0 lastMove 
-\f0\b \cf2 in 
-\f1\b0 \cf0 legal
-\f0\b :\
-        
-\f1\b0 move 
-\f0\b = 
-\f1\b0 \cf2 self
-\f0\b \cf0 .
-\f1\b0 lastMove\
-        \
-    
-\f0\b \cf2 if 
-\f1\b0 \cf0 move 
-\f0\b \cf2 not in 
-\f1\b0 \cf0 legal
-\f0\b :\
-      
-\f1\b0 move 
-\f0\b = 
-\f1\b0 random
-\f0\b .
-\f1\b0 choice
-\f0\b (
-\f1\b0 legal
-\f0\b )\
-      \
-    
-\f1\b0 \cf2 self
-\f0\b \cf0 .
-\f1\b0 lastMove 
-\f0\b = 
-\f1\b0 move\
-    
-\f0\b \cf2 return 
-\f1\b0 \cf0 move\
-\
-  
-\f0\b \cf2 def 
-\f1\b0 \cf0 getMove
-\f0\b (
-\f1\b0 \cf2 self
-\f0\b \cf0 , 
-\f1\b0 legal
-\f0\b ):\
-    
-\f1\b0 move 
-\f0\b = 
-\f1\b0 Directions
-\f0\b .
-\f1\b0 STOP\
-    
-\f0\b \cf2 if   \cf0 (
-\f1\b0 \cf2 self
-\f0\b \cf0 .
-\f1\b0 WEST_KEY 
-\f0\b \cf2 in 
-\f1\b0 self
-\f0\b \cf0 .
-\f1\b0 keys 
-\f0\b \cf2 or 
-\f1\b0 \cf5 'Left' 
-\f0\b \cf2 in 
-\f1\b0 self
-\f0\b \cf0 .
-\f1\b0 keys
-\f0\b ) \cf2 and 
-\f1\b0 \cf0 Directions
-\f0\b .
-\f1\b0 WEST 
-\f0\b \cf2 in 
-\f1\b0 \cf0 legal
-\f0\b :  
-\f1\b0 move 
-\f0\b = 
-\f1\b0 Directions
-\f0\b .
-\f1\b0 WEST\
-    
-\f0\b \cf2 if   \cf0 (
-\f1\b0 \cf2 self
-\f0\b \cf0 .
-\f1\b0 EAST_KEY 
-\f0\b \cf2 in 
-\f1\b0 self
-\f0\b \cf0 .
-\f1\b0 keys 
-\f0\b \cf2 or 
-\f1\b0 \cf5 'Right' 
-\f0\b \cf2 in 
-\f1\b0 self
-\f0\b \cf0 .
-\f1\b0 keys
-\f0\b ) \cf2 and 
-\f1\b0 \cf0 Directions
-\f0\b .
-\f1\b0 EAST 
-\f0\b \cf2 in 
-\f1\b0 \cf0 legal
-\f0\b : 
-\f1\b0 move 
-\f0\b = 
-\f1\b0 Directions
-\f0\b .
-\f1\b0 EAST\
-    
-\f0\b \cf2 if   \cf0 (
-\f1\b0 \cf2 self
-\f0\b \cf0 .
-\f1\b0 NORTH_KEY 
-\f0\b \cf2 in 
-\f1\b0 self
-\f0\b \cf0 .
-\f1\b0 keys 
-\f0\b \cf2 or 
-\f1\b0 \cf5 'Up' 
-\f0\b \cf2 in 
-\f1\b0 self
-\f0\b \cf0 .
-\f1\b0 keys
-\f0\b ) \cf2 and 
-\f1\b0 \cf0 Directions
-\f0\b .
-\f1\b0 NORTH 
-\f0\b \cf2 in 
-\f1\b0 \cf0 legal
-\f0\b :   
-\f1\b0 move 
-\f0\b = 
-\f1\b0 Directions
-\f0\b .
-\f1\b0 NORTH\
-    
-\f0\b \cf2 if   \cf0 (
-\f1\b0 \cf2 self
-\f0\b \cf0 .
-\f1\b0 SOUTH_KEY 
-\f0\b \cf2 in 
-\f1\b0 self
-\f0\b \cf0 .
-\f1\b0 keys 
-\f0\b \cf2 or 
-\f1\b0 \cf5 'Down' 
-\f0\b \cf2 in 
-\f1\b0 self
-\f0\b \cf0 .
-\f1\b0 keys
-\f0\b ) \cf2 and 
-\f1\b0 \cf0 Directions
-\f0\b .
-\f1\b0 SOUTH 
-\f0\b \cf2 in 
-\f1\b0 \cf0 legal
-\f0\b : 
-\f1\b0 move 
-\f0\b = 
-\f1\b0 Directions
-\f0\b .
-\f1\b0 SOUTH\
-    
-\f0\b \cf2 return 
-\f1\b0 \cf0 move\
-  \
+    self.lastMove = move
+    return move
 
-\f0\b \cf2 class 
-\f1\b0 \cf0 KeyboardAgent2
-\f0\b (
-\f1\b0 KeyboardAgent
-\f0\b ):\
+  def getMove(self, legal):
+    move = Directions.STOP
+    if   (self.WEST_KEY in self.keys or 'Left' in self.keys) and Directions.WEST in legal:  move = Directions.WEST
+    if   (self.EAST_KEY in self.keys or 'Right' in self.keys) and Directions.EAST in legal: move = Directions.EAST
+    if   (self.NORTH_KEY in self.keys or 'Up' in self.keys) and Directions.NORTH in legal:   move = Directions.NORTH
+    if   (self.SOUTH_KEY in self.keys or 'Down' in self.keys) and Directions.SOUTH in legal: move = Directions.SOUTH
+    return move
   
-\f1\b0 \cf3 """\
-  A second agent controlled by the keyboard.\
-  """\
+class KeyboardAgent2(KeyboardAgent):
+  """
+  A second agent controlled by the keyboard.
+  """
+  # NOTE: Arrow keys also work.
+  WEST_KEY  = 'j' 
+  EAST_KEY  = "l" 
+  NORTH_KEY = 'i' 
+  SOUTH_KEY = 'k'
+  STOP_KEY = 'u'
+
+  def getMove(self, legal):
+    move = Directions.STOP
+    if   (self.WEST_KEY in self.keys) and Directions.WEST in legal:  move = Directions.WEST
+    if   (self.EAST_KEY in self.keys) and Directions.EAST in legal: move = Directions.EAST
+    if   (self.NORTH_KEY in self.keys) and Directions.NORTH in legal:   move = Directions.NORTH
+    if   (self.SOUTH_KEY in self.keys) and Directions.SOUTH in legal: move = Directions.SOUTH
+    return move
   
-\f2\i \cf4 # NOTE: Arrow keys also work.\
   
-\f1\i0 \cf0 WEST_KEY  
-\f0\b = 
-\f1\b0 \cf5 'j' \
-  \cf0 EAST_KEY  
-\f0\b = 
-\f1\b0 \cf5 "l" \
-  \cf0 NORTH_KEY 
-\f0\b = 
-\f1\b0 \cf5 'i' \
-  \cf0 SOUTH_KEY 
-\f0\b = 
-\f1\b0 \cf5 'k'\
-  \
-  
-\f0\b \cf2 def 
-\f1\b0 \cf0 getMove
-\f0\b (
-\f1\b0 \cf2 self
-\f0\b \cf0 , 
-\f1\b0 legal
-\f0\b ):\
-    
-\f1\b0 move 
-\f0\b = 
-\f1\b0 Directions
-\f0\b .
-\f1\b0 STOP\
-    
-\f0\b \cf2 if   \cf0 (
-\f1\b0 \cf2 self
-\f0\b \cf0 .
-\f1\b0 WEST_KEY 
-\f0\b \cf2 in 
-\f1\b0 self
-\f0\b \cf0 .
-\f1\b0 keys
-\f0\b ) \cf2 and 
-\f1\b0 \cf0 Directions
-\f0\b .
-\f1\b0 WEST 
-\f0\b \cf2 in 
-\f1\b0 \cf0 legal
-\f0\b :  
-\f1\b0 move 
-\f0\b = 
-\f1\b0 Directions
-\f0\b .
-\f1\b0 WEST\
-    
-\f0\b \cf2 if   \cf0 (
-\f1\b0 \cf2 self
-\f0\b \cf0 .
-\f1\b0 EAST_KEY 
-\f0\b \cf2 in 
-\f1\b0 self
-\f0\b \cf0 .
-\f1\b0 keys
-\f0\b ) \cf2 and 
-\f1\b0 \cf0 Directions
-\f0\b .
-\f1\b0 EAST 
-\f0\b \cf2 in 
-\f1\b0 \cf0 legal
-\f0\b : 
-\f1\b0 move 
-\f0\b = 
-\f1\b0 Directions
-\f0\b .
-\f1\b0 EAST\
-    
-\f0\b \cf2 if   \cf0 (
-\f1\b0 \cf2 self
-\f0\b \cf0 .
-\f1\b0 NORTH_KEY 
-\f0\b \cf2 in 
-\f1\b0 self
-\f0\b \cf0 .
-\f1\b0 keys
-\f0\b ) \cf2 and 
-\f1\b0 \cf0 Directions
-\f0\b .
-\f1\b0 NORTH 
-\f0\b \cf2 in 
-\f1\b0 \cf0 legal
-\f0\b :   
-\f1\b0 move 
-\f0\b = 
-\f1\b0 Directions
-\f0\b .
-\f1\b0 NORTH\
-    
-\f0\b \cf2 if   \cf0 (
-\f1\b0 \cf2 self
-\f0\b \cf0 .
-\f1\b0 SOUTH_KEY 
-\f0\b \cf2 in 
-\f1\b0 self
-\f0\b \cf0 .
-\f1\b0 keys
-\f0\b ) \cf2 and 
-\f1\b0 \cf0 Directions
-\f0\b .
-\f1\b0 SOUTH 
-\f0\b \cf2 in 
-\f1\b0 \cf0 legal
-\f0\b : 
-\f1\b0 move 
-\f0\b = 
-\f1\b0 Directions
-\f0\b .
-\f1\b0 SOUTH\
-    
-\f0\b \cf2 return 
-\f1\b0 \cf0 move}
