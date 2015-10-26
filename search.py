@@ -193,20 +193,19 @@ def aStarSearch(problem, heuristic=nullHeuristic):
             nodo = Pacman(proxNodo[0], pacAtual, proxNodo[1], proxNodo[2])
             pac.push( nodo, problem.getCostOfActions(nodo.getActionsToReachNode()) + heuristic(nodo.getState(),problem) )
    
-def hillclimb(problem, heuristic=nullHeuristic):
+def hillclimb(problem, heuristic):
   
   pac = util.PriorityQueue()                                       #Filas de Prioridade
   nodosExplorados = []                                             #Array com Nodos Explorados
 
   nodo = Pacman(problem.getStartState(), None, None, 0)
   pac.push(nodo, problem.getCostOfActions(nodo.actionsToReachNode) + heuristic(nodo.getState(),problem))
-
-  while True:   #(not pac.isEmpty()):                                       #Enquanto ha itens na pilha para consumir
+  
+  while (not pac.isEmpty()):                                       #Enquanto ha itens na pilha para consumir
     pacAtual = pac.pop()                                           #Consome a pilha que contem estados sucessores da raiz
-    costAtual = problem.getCostOfActions(pacAtual.actionsToReachNode)
-    
     nodosExplorados.append(pacAtual.getState())                    #add nodo visitado para nao visitar novamente
     
+    costAtual = heuristic(nodo.getState(), problem)
     if problem.isGoalState(pacAtual.getState()):                   #Testa se o pacman esta no Estado Meta
         print "\n" 
         print " Caminho Encontrado:"
@@ -217,14 +216,16 @@ def hillclimb(problem, heuristic=nullHeuristic):
         nextpac = problem.getSuccessors(pacAtual.getState())       #Retorna os proximos passos
         for proxNodo in nextpac:                                   #Percorre todos os proximos nodos
             
-            #print problem.getCostOfActions(pacAtual.actionsToReachNode)
-            #util.pause()
-            
-            if problem.getCostOfActions(pacAtual.actionsToReachNode) >= costAtual:
-              if proxNodo[0] not in nodosExplorados:                   #se o nodo nao foi explorado add na pilha para consumir depois
-                #print proxNodo
+            if proxNodo[0] not in nodosExplorados:                   #se o nodo nao foi explorado add na pilha para consumir depois
+              if  heuristic(proxNodo[0], problem) < costAtual:
                 nodo = Pacman(proxNodo[0], pacAtual, proxNodo[1], proxNodo[2])
                 pac.push( nodo, problem.getCostOfActions(nodo.getActionsToReachNode()) + heuristic(nodo.getState(),problem) )
+  #caso nao chegue no meta e nao tenha mais sucessores melhores
+  print "\n" 
+  print " Caminho Encontrado:"
+  print "\n"
+  print pacAtual.getActionsToReachNode()                     #Printa melhor caminho
+  return pacAtual.getActionsToReachNode()                    #Depois de Chegar ao estado meta coloca Pacman para andar
 
 def SimulatedAnnealing(problem, heuristic=nullHeuristic):
   
