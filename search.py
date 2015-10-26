@@ -12,12 +12,24 @@ by Pacman agents (in searchAgents.py).
 """
 
 import util
+import random
 
 class Pacman:                                                     #Struct com status do Pacman
-    def __init__(self, state, parent, action):
+  
+    def __init__(self, state, parent, action, stepcost):
         self.state  = state                                       #estado do proprio nodo
         self.parent = parent                                      #nodo pai
         self.action = action
+        self.cost = stepcost
+        if parent:
+            actionsToGoal = parent.actionsToReachNode[:]
+            actionsToGoal.append(action)
+            self.actionsToReachNode = actionsToGoal 
+        else:
+            self.actionsToReachNode = []
+
+    def getCost(self):
+        return self.cost
 
     def getState(self):
         return self.state
@@ -37,38 +49,9 @@ class Pacman:                                                     #Struct com st
             pacAtual = pacAtual.parent                            #sobe para o pai
         movimentos.reverse()                                      #inverte a ordem para ficar na ordem certa que foi percorrido
         return movimentos
-
-
-class NodeUCS:
-    def __init__(self, state, parent, action):
-        self.state  = state
-        self.parent = parent
-        self.action = action
-        if parent==None:
-            self.actionsToReachNode = []
-        else:
-            t = parent.actionsToReachNode[:]
-            t.append(action)
-            self.actionsToReachNode = t
-
-    def __str__(self):
-        return "State: " + str(self.state) + "\n" + \
-               "Parent: " + str(self.parent.state) + "\n" + \
-               "Action: " + str(self.action) + "\n" + \
-               "Cost: " + str(self.cost)
-
-    def getState(self):
-        return self.state
-
-    def getParent(self):
-        return self.parent
-
-    def getAction(self):
-        return self.action
-
+    
     def getActionsToReachNode(self):
         return self.actionsToReachNode
-
 
 class SearchProblem:
   """
@@ -113,7 +96,6 @@ class SearchProblem:
      """
      util.raiseNotDefined()
            
-
 def tinyMazeSearch(problem):
   """
   Returns a sequence of moves that solves tinyMaze.  For any other
@@ -144,23 +126,27 @@ def depthFirstSearch(problem):
   pac = util.Stack()                                                          #Pilha LIFO.
   nodosExplorados = []                                                        #Array com Nodos Explorados
 
-  pac.push(Pacman(problem.getStartState(), None, None))                       #Guarda na Pilha o Estado Inicial do Primeiro estado do Pacman
+  nodo = Pacman(problem.getStartState(), None, None)
+  pac.push( nodo )                                                            #Guarda na Pilha o Estado Inicial do Primeiro estado do Pacman
  
   while (not pac.isEmpty()):                                                  #Enquanto ha itens na pilha para consumir
       pacAtual = pac.pop()                                                    #Consome a pilha que contem estados sucessores da raiz
       nodosExplorados.append(pacAtual.getState())                             #add nodo visitado para nao visitar novamente
 
       if problem.isGoalState(pacAtual.getState()):                            #Testa se o pacman esta no Estado Meta
+          print "\n" 
+          print " Melhor Caminho:"
+          print "\n"
           return pacAtual.pacmanRun()                                         #Depois de Chegar ao estado meta coloca Pacman para andar
       else:
           nextpac = problem.getSuccessors(pacAtual.getState())                #Retorna os proximos passos
           for proxNodo in nextpac:                                            #Percorre todos os proximos nodos
               #print proxNodo
               if proxNodo[0] not in nodosExplorados:                          #se o nodo nao foi explorado add na pilha para consumir depois
-                  pac.push( Pacman(proxNodo[0], pacAtual, proxNodo[1]) )      #proxNodo[0] - onde o nodo esta no mapa, proxNodo[1] - acao do nodo
+                  nodo = Pacman(proxNodo[0], pacAtual, proxNodo[1])
+                  pac.push( nodo )                                            #proxNodo[0] - onde o nodo esta no mapa, proxNodo[1] - acao do nodo
 
   print "Erro - Pacman esta sem estado inicial."
-
 
 def breadthFirstSearch(problem):
   "Search the shallowest nodes in the search tree first. [p 81]"
@@ -183,33 +169,104 @@ def aStarSearch(problem, heuristic=nullHeuristic):
   "Search the node that has the lowest combined cost and heuristic first."
   "*** YOUR CODE HERE ***"
   
-  s = util.PriorityQueue()
-  explored = []
-  startNode = NodeUCS(problem.getStartState(), None, None)
-  s.push(startNode, problem.getCostOfActions(startNode.actionsToReachNode) + heuristic(startNode.getState(),problem))
+  pac = util.PriorityQueue()                                       #Filas de Prioridade
+  nodosExplorados = []                                             #Array com Nodos Explorados
 
-  while (not s.isEmpty()):
-  #for i in range(3):
-      currNode = s.pop()
-      explored.append(currNode.getState())
-      if problem.isGoalState(currNode.getState()):
-          print "done"
-          return currNode.getActionsToReachNode()
-      else:
-          successors = problem.getSuccessors(currNode.getState())
-          for item in successors:
-              state = item[0]
-              action = item[1]
-              if state not in explored:
-                  n = NodeUCS(state, currNode, action)
-                  #print "Action sequence: ", n.getActionsToReachNode()
-                  #util.pause()
-                  s.push( n, problem.getCostOfActions(n.getActionsToReachNode() ) + heuristic(n.getState(),problem))
-  util.raiseNotDefined()
+  nodo = Pacman(problem.getStartState(), None, None, 0)
+  pac.push(nodo, problem.getCostOfActions(nodo.actionsToReachNode) + heuristic(nodo.getState(),problem))
+
+  while (not pac.isEmpty()):                                       #Enquanto ha itens na pilha para consumir
+    pacAtual = pac.pop()                                           #Consome a pilha que contem estados sucessores da raiz
+    nodosExplorados.append(pacAtual.getState())                    #add nodo visitado para nao visitar novamente
     
+    if problem.isGoalState(pacAtual.getState()):                   #Testa se o pacman esta no Estado Meta
+        print "\n" 
+        print " Melhor Caminho:"
+        print "\n"
+        print pacAtual.getActionsToReachNode()                     #Printa melhor caminho
+        return pacAtual.getActionsToReachNode()                    #Depois de Chegar ao estado meta coloca Pacman para andar
+    else:
+        nextpac = problem.getSuccessors(pacAtual.getState())       #Retorna os proximos passos
+        for proxNodo in nextpac:                                   #Percorre todos os proximos nodos
+          if proxNodo[0] not in nodosExplorados:                   #se o nodo nao foi explorado add na pilha para consumir depois
+            print proxNodo
+            nodo = Pacman(proxNodo[0], pacAtual, proxNodo[1], proxNodo[2])
+            pac.push( nodo, problem.getCostOfActions(nodo.getActionsToReachNode()) + heuristic(nodo.getState(),problem) )
+   
+def hillclimb(problem, heuristic=nullHeuristic):
   
+  pac = util.PriorityQueue()                                       #Filas de Prioridade
+  nodosExplorados = []                                             #Array com Nodos Explorados
+
+  nodo = Pacman(problem.getStartState(), None, None, 0)
+  pac.push(nodo, problem.getCostOfActions(nodo.actionsToReachNode) + heuristic(nodo.getState(),problem))
+
+  while True:   #(not pac.isEmpty()):                                       #Enquanto ha itens na pilha para consumir
+    pacAtual = pac.pop()                                           #Consome a pilha que contem estados sucessores da raiz
+    costAtual = problem.getCostOfActions(pacAtual.actionsToReachNode)
+    
+    nodosExplorados.append(pacAtual.getState())                    #add nodo visitado para nao visitar novamente
+    
+    if problem.isGoalState(pacAtual.getState()):                   #Testa se o pacman esta no Estado Meta
+        print "\n" 
+        print " Caminho Encontrado:"
+        print "\n"
+        print pacAtual.getActionsToReachNode()                     #Printa melhor caminho
+        return pacAtual.getActionsToReachNode()                    #Depois de Chegar ao estado meta coloca Pacman para andar
+    else:
+        nextpac = problem.getSuccessors(pacAtual.getState())       #Retorna os proximos passos
+        for proxNodo in nextpac:                                   #Percorre todos os proximos nodos
+            
+            #print problem.getCostOfActions(pacAtual.actionsToReachNode)
+            #util.pause()
+            
+            if problem.getCostOfActions(pacAtual.actionsToReachNode) >= costAtual:
+              if proxNodo[0] not in nodosExplorados:                   #se o nodo nao foi explorado add na pilha para consumir depois
+                #print proxNodo
+                nodo = Pacman(proxNodo[0], pacAtual, proxNodo[1], proxNodo[2])
+                pac.push( nodo, problem.getCostOfActions(nodo.getActionsToReachNode()) + heuristic(nodo.getState(),problem) )
+
+def SimulatedAnnealing(problem, heuristic=nullHeuristic):
+  
+  pac = util.PriorityQueue()                                       #Filas de Prioridade
+  nodosExplorados = []                                             #Array com Nodos Explorados
+
+  nodo = Pacman(problem.getStartState(), None, None, 0)
+  pac.push(nodo, problem.getCostOfActions(nodo.actionsToReachNode) + heuristic(nodo.getState(),problem))
+
+  while True:   #(not pac.isEmpty()):                                       #Enquanto ha itens na pilha para consumir
+    pacAtual = pac.pop()                                           #Consome a pilha que contem estados sucessores da raiz
+    costAtual = problem.getCostOfActions(pacAtual.actionsToReachNode)
+    
+    nodosExplorados.append(pacAtual.getState())                    #add nodo visitado para nao visitar novamente
+    
+    if problem.isGoalState(pacAtual.getState()):                   #Testa se o pacman esta no Estado Meta
+        print "\n" 
+        print " Caminho Encontrado:"
+        print "\n"
+        print pacAtual.getActionsToReachNode()                     #Printa melhor caminho
+        return pacAtual.getActionsToReachNode()                    #Depois de Chegar ao estado meta coloca Pacman para andar
+    else:
+        nextpac = problem.getSuccessors(pacAtual.getState())       #Retorna os proximos passos
+        for proxNodo in nextpac:                                   #Percorre todos os proximos nodos
+            
+            print problem.getCostOfActions(pacAtual.actionsToReachNode)
+            #util.pause()
+            
+            if problem.getCostOfActions(pacAtual.actionsToReachNode) >= costAtual:
+              if proxNodo[0] not in nodosExplorados:                   #se o nodo nao foi explorado add na pilha para consumir depois
+                print proxNodo
+                nodo = Pacman(proxNodo[0], pacAtual, proxNodo[1], proxNodo[2])
+                pac.push( nodo, problem.getCostOfActions(nodo.getActionsToReachNode()) + heuristic(nodo.getState(),problem) )
+            else:
+              num = random.randint(0, costAtual)
+              for x in range(0,  num):     #entre nao voltar nada e poder voltar ate todos os passos
+                pac = pac.parent                 #vai voltando ate o numero sortiado     
+
 # Abbreviations
 bfs = breadthFirstSearch
 dfs = depthFirstSearch
 astar = aStarSearch
+hclimb = hillclimb
+sannealing = SimulatedAnnealing
 ucs = uniformCostSearch

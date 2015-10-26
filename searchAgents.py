@@ -354,6 +354,18 @@ class AStarCornersAgent(SearchAgent):
     self.searchFunction = lambda prob: search.aStarSearch(prob, cornersHeuristic)
     self.searchType = CornersProblem
 
+class HclimbCornersAgent(SearchAgent):
+  "A SearchAgent for FoodSearchProblem using Hill Climb and your foodHeuristic"
+  def __init__(self):
+    self.searchFunction = lambda prob: search.hclimbSearch(prob, cornersHeuristic)
+    self.searchType = CornersProblem 
+
+class sannealingCornersAgent(SearchAgent):
+  "A SearchAgent for FoodSearchProblem using Simulated Annealing and your foodHeuristic"
+  def __init__(self):
+    self.searchFunction = lambda prob: search.sannealingSearch(prob, cornersHeuristic)
+    self.searchType = CornersProblem       
+
 class FoodSearchProblem:
   """
   A search problem associated with finding the a path that collects all of the 
@@ -409,6 +421,18 @@ class AStarFoodSearchAgent(SearchAgent):
   def __init__(self):
     self.searchFunction = lambda prob: search.aStarSearch(prob, foodHeuristic)
     self.searchType = FoodSearchProblem
+
+class HclimbFoodSearchAgent(SearchAgent):
+  "A SearchAgent for FoodSearchProblem using Hill Climb and your foodHeuristic"
+  def __init__(self):
+    self.searchFunction = lambda prob: search.hclimbSearch(prob, foodHeuristic)
+    self.searchType = FoodSearchProblem   
+
+class sannealingFoodSearchAgent(SearchAgent):
+  "A SearchAgent for FoodSearchProblem using Simulated Annealing and your foodHeuristic"
+  def __init__(self):
+    self.searchFunction = lambda prob: search.sannealingSearch(prob, foodHeuristic)
+    self.searchType = FoodSearchProblem     
 
 def foodHeuristic(state, problem):
   """
